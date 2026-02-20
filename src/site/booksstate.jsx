@@ -13,8 +13,7 @@ export function BooksStateProvider({ children }) {
             try {
                 const res = await fetch(API);
                 const data = await res.json();
-                if (!mounted) return;
-                setBooksState(data);
+                !mounted ? null : setBooksState(data);
             } catch (e) {
                 setBooksState([]);
             } finally {
@@ -76,7 +75,7 @@ export function BooksStateProvider({ children }) {
     const setBooks = (updater) => {
         setBooksState(prev => {
             const next = typeof updater === 'function' ? updater(prev) : updater;
-            if (initializedRef.current && !syncingRef.current) syncBooks(prev, next);
+            initializedRef.current && !syncingRef.current ? syncBooks(prev, next) : null;
             return next;
         });
     };

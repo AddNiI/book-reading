@@ -25,13 +25,12 @@ export function LoginsStateProvider({ children }) {
             }
         })();
         const saved = localStorage.getItem('currentUser');
-        if (saved) setCurrentUser(JSON.parse(saved));
+        saved ? setCurrentUser(JSON.parse(saved)) : null;
         return () => { mounted = false; };
     }, []);
 
     useEffect(() => {
-        if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        else localStorage.removeItem('currentUser');
+        currentUser ? localStorage.setItem('currentUser', JSON.stringify(currentUser)) : localStorage.removeItem('currentUser');
     }, [currentUser]);
 
     const fetchAll = async () => {
@@ -86,7 +85,7 @@ export function LoginsStateProvider({ children }) {
     const setUsers = (updater) => {
         setUsersState(prev => {
             const next = typeof updater === 'function' ? updater(prev) : updater;
-            if (initializedRef.current && !syncingRef.current) syncUsers(prev, next);
+            initializedRef.current && !syncingRef.current ? syncUsers(prev, next) : null;
             return next;
         });
     };

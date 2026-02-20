@@ -13,8 +13,7 @@ export function PagesStateProvider({ children }) {
             try {
                 const res = await fetch(API);
                 const data = await res.json();
-                if (!mounted) return;
-                setPagesState(data);
+                !mounted ? null : setPagesState(data);
             } catch (e) {
                 setPagesState([]);
             } finally {
@@ -76,7 +75,7 @@ export function PagesStateProvider({ children }) {
     const setPages = (updater) => {
         setPagesState(prev => {
             const next = typeof updater === 'function' ? updater(prev) : updater;
-            if (initializedRef.current && !syncingRef.current) syncPages(prev, next);
+            initializedRef.current && !syncingRef.current ? syncPages(prev, next) : null;
             return next;
         });
     };

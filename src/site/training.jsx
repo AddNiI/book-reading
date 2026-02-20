@@ -151,7 +151,7 @@ function Training() {
                 || books.find(b => String(b.whatuserid) === String(uid) && String(b.bookname || '').toLowerCase().includes(q));
         }
         if (real) {
-            if (!selectBook.some(book => String(book.id) === String(real.id))) setSelectBook(prev => [...prev, real]);
+            !selectBook.some(book => String(book.id) === String(real.id)) ? setSelectBook(prev => [...prev, real]) : null;
         }
         setTrain({bookname: ''});
         setNeedbooks([]);
@@ -308,7 +308,7 @@ function Training() {
                                                 needbooks.map(book => (
                                                     <p key={book.id} onClick={() => {
                                                         const real = books.find(b => String(b.id) === String(book.id)) || book;
-                                                        if (!selectBook.some(b => String(b.id) === String(real.id))) setSelectBook(prev => [...prev, real]);
+                                                        !selectBook.some(b => String(b.id) === String(real.id)) ? setSelectBook(prev => [...prev, real]) : null;
                                                         setTrain({ bookname: '' });
                                                         setNeedbooks([]);
                                                     }} style={{cursor: 'pointer', margin: '0', padding: '0 10px'}}>{book.bookname}</p>
