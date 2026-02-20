@@ -2,15 +2,19 @@
 	"name": "vite-template-react",
 	"version": "1.4.0",
 	"type": "module",
+	"homepage": "https://addnii.github.io/book-reading/",
 	"scripts": {
 		"start": "vite --port 3000 --open",
 		"dev": "vite --port 3000 --open",
 		"build": "vite build",
 		"serve": "vite preview --open",
-		"test": "vitest"
+		"test": "vitest",
+		"predeploy": "npm run build",
+		"deploy": "gh-pages -d dist"
 	},
 	"dependencies": {
 		"chart.js": "^4.5.1",
+		"gh-pages": "^6.3.0",
 		"react": "^19.0.0",
 		"react-chartjs-2": "^5.3.1",
 		"react-dom": "^19.0.0",

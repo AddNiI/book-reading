@@ -25,6 +25,15 @@ function Training() {
     const [data3, setData3] = useState('');
     const [data4, setData4] = useState('');
     const [countPages, setCountPages] = useState('');
+    const onChange = (value, name) => {
+        if (name === 'bookname') {
+            setTrain(prev => ({ ...prev, bookname: value }));
+            const q = String(value || '').trim().toLowerCase();
+            if (!q) { setNeedbooks([]); return; }
+            const matched = books.filter(b => String(b.whatuserid) == String(uid) && String(b.bookname || '').toLowerCase().includes(q));
+            setNeedbooks(matched);
+        }
+    };
     const { pages, setPages} = useContext(PagesState);
     const [ currentUserPages, setCurrentUserPages ] = useState([])
     const [focused1, setFocused1] = useState(false);
@@ -131,11 +140,19 @@ function Training() {
         return () => clearInterval(interval);
     }, [currentUser?.finishDate]);
     const inputData = () => {
-        needbooks.length === 0 
-            ? null
-            : !selectBook.some(book => book.id === needbooks[0].id)
-                ? setSelectBook(prev => [...prev, needbooks[0]])
-                : null;
+        // prefer the filtered suggestion; if empty, try to find by typed name
+        let real = null;
+        if (needbooks.length > 0) {
+            const candidate = needbooks[0];
+            real = books.find(b => String(b.id) === String(candidate.id)) || candidate;
+        } else if ((train.bookname || '').trim() !== '') {
+            const q = String(train.bookname).trim().toLowerCase();
+            real = books.find(b => String(b.whatuserid) === String(uid) && String(b.bookname || '').toLowerCase() === q)
+                || books.find(b => String(b.whatuserid) === String(uid) && String(b.bookname || '').toLowerCase().includes(q));
+        }
+        if (real) {
+            if (!selectBook.some(book => String(book.id) === String(real.id))) setSelectBook(prev => [...prev, real]);
+        }
         setTrain({bookname: ''});
         setNeedbooks([]);
     }
@@ -284,12 +301,17 @@ function Training() {
                                     <input onFocus={() => setFocused3(true)} onBlur={() => setFocused3(false)} placeholder='Обрати книги з бібліотеки' onChange={e => onChange(e.target.value, 'bookname')} style={{outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused3 ? '#fff' : '#F6F7FB', border: focused3 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: '25px 46px 25px 0', width:'656px', height: '42px', boxShadow: focused3 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}}></input>
                                     <button onClick={inputData} style={{backgroundColor: "#F6F7FB", border: '1px solid #242A37', width: '171px', height: '42px'}}>Додати</button>
                                 </div>
-                                <div style={{backgroundColor: '#fff', width: '669px', borderRadius: '0 0 6px 6px', position: 'absolute'}}>
+                                    <div style={{backgroundColor: '#fff', width: '669px', borderRadius: '0 0 6px 6px', position: 'absolute'}}>
                                     {needbooks.length === 0 || train.bookname == '' || !focused3  ? (
                                             <></>
                                         ) : (
                                                 needbooks.map(book => (
-                                                    <p key={book.id} style={{cursor: 'pointer', margin: '0', padding: '0 10px'}}>{book.bookname}</p>
+                                                    <p key={book.id} onClick={() => {
+                                                        const real = books.find(b => String(b.id) === String(book.id)) || book;
+                                                        if (!selectBook.some(b => String(b.id) === String(real.id))) setSelectBook(prev => [...prev, real]);
+                                                        setTrain({ bookname: '' });
+                                                        setNeedbooks([]);
+                                                    }} style={{cursor: 'pointer', margin: '0', padding: '0 10px'}}>{book.bookname}</p>
                                                 )
                                             )
                                         )
@@ -307,9 +329,7 @@ function Training() {
                             <p style={{margin: '10px 0 10px'}}>Стор.</p>
                         </div>
                         <hr style={{color: '#898F9F', margin: '0'}} />
-                        {reading.length === 0 && finishing.length === 0 ? (
-                            <></>
-                        ) : training ? (
+                        {training ? (
                             <>
                                 {finishing.map(book => (
                                     <div key={book.id} style={{display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, width: '886px'}}>
@@ -330,6 +350,8 @@ function Training() {
                                     </div>
                                 ))}
                             </>
+                        ) : selectBook.length === 0 ? (
+                            <></>
                         ) : (
                             selectBook.map(book => (
                                 <div key={book.id} style={{display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, width: '856px'}}>

@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: '/book-reading/',
+  "build": "vite build",
+  "preview": "vite preview",
   test: {
     globals: true,
     environment: 'jsdom',

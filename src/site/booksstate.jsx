@@ -1,21 +1,86 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useRef } from "react";
 
 export const BooksState = createContext();
 export function BooksStateProvider({ children }) {
-    const [books, setBooks] = useState(() => {
-        const isSaved = localStorage.getItem('books');
-        return isSaved ? JSON.parse(isSaved) : [
-            { whatuserid: 1, id: 1, bookname: 'Test Book', author: "Tst", year: '2000', pages: "100", mark: 0, read: true, finished: false, review: ''},
-            { whatuserid: 1, id: 2, bookname: 'Test Book 2', author: "Tst", year: '2100', pages: "7000", mark: 0, read: false, finished: false, review: ''},
-            { whatuserid: 1, id: 3, bookname: 'Test Book 3', author: "Tst", year: '900', pages: "30", mark: 5, read: true, finished: true, review: ''},
-            { whatuserid: 1, id: 4, bookname: 'Test Book 4', author: "Tst", year: '-20', pages: "309", mark: 2, read: true, finished: true, review: ''},
-            { whatuserid: 2, id: 5, bookname: 'Test Book 5', author: "Tst", year: '90', pages: "3", mark: 2, read: true, finished: true, review: ''},
-            { whatuserid: 1, id: 6, bookname: 'Test Book 6', author: "Tst", year: '-2000', pages: "89", mark: 0, read: true, finished: true, review: ''},
-            { whatuserid: 4, id: 7, bookname: 'Test Book 6', author: "Tst", year: '-2000', pages: "5", mark: 0, read: true, finished: false, review: ''},
-    ]});
+    const API = 'https://6997ffacd66520f95f1640b4.mockapi.io/books';
+    const [books, setBooksState] = useState([]);
+    const initializedRef = useRef(false);
+    const syncingRef = useRef(false);
+
     useEffect(() => {
-        localStorage.setItem('books', JSON.stringify(books));
-    }, [books]);
+        let mounted = true;
+        (async () => {
+            try {
+                const res = await fetch(API);
+                const data = await res.json();
+                if (!mounted) return;
+                setBooksState(data);
+            } catch (e) {
+                setBooksState([]);
+            } finally {
+                initializedRef.current = true;
+            }
+        })();
+        return () => { mounted = false; };
+    }, []);
+
+    const fetchAll = async () => {
+        try {
+            const r = await fetch(API);
+            const d = await r.json();
+            syncingRef.current = true;
+            setBooksState(d);
+        } finally {
+            syncingRef.current = false;
+        }
+    };
+
+    const syncBooks = async (prev, next) => {
+        if (!initializedRef.current || syncingRef.current) return;
+        try {
+            const prevMap = new Map(prev.map(p => [String(p.id), p]));
+            const nextMap = new Map(next.map(n => [String(n.id), n]));
+
+            for (const n of next) {
+                const key = String(n.id ?? '');
+                if (!key || !prevMap.has(key)) {
+                    const payload = { ...n };
+                    delete payload.id;
+                    await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                }
+            }
+
+            for (const p of prev) {
+                const key = String(p.id ?? '');
+                if (key && !nextMap.has(key)) {
+                    await fetch(`${API}/${key}`, { method: 'DELETE' });
+                }
+            }
+
+            for (const n of next) {
+                const key = String(n.id ?? '');
+                if (key && prevMap.has(key)) {
+                    const prevItem = prevMap.get(key);
+                    if (JSON.stringify(prevItem) !== JSON.stringify(n)) {
+                        const payload = { ...n };
+                        delete payload.id;
+                        await fetch(`${API}/${key}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    }
+                }
+            }
+        } finally {
+            await fetchAll();
+        }
+    };
+
+    const setBooks = (updater) => {
+        setBooksState(prev => {
+            const next = typeof updater === 'function' ? updater(prev) : updater;
+            if (initializedRef.current && !syncingRef.current) syncBooks(prev, next);
+            return next;
+        });
+    };
+
     return (
         <BooksState.Provider value={{ books, setBooks }}>
             {children}

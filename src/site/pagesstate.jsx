@@ -1,15 +1,86 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useRef } from "react";
 
 export const PagesState = createContext();
 export function PagesStateProvider({ children }) {
-    const [pages, setPages] = useState(() => {
-        const isSaved = localStorage.getItem('pages');
-        return isSaved ? JSON.parse(isSaved) : [
-            /* { date: '', time: '', pages: '', userid}, */
-    ]});
+    const API = 'https://6997ffacd66520f95f1640b4.mockapi.io/pages';
+    const [pages, setPagesState] = useState([]);
+    const initializedRef = useRef(false);
+    const syncingRef = useRef(false);
+
     useEffect(() => {
-        localStorage.setItem('pages', JSON.stringify(pages));
-    }, [pages]);
+        let mounted = true;
+        (async () => {
+            try {
+                const res = await fetch(API);
+                const data = await res.json();
+                if (!mounted) return;
+                setPagesState(data);
+            } catch (e) {
+                setPagesState([]);
+            } finally {
+                initializedRef.current = true;
+            }
+        })();
+        return () => { mounted = false; };
+    }, []);
+
+    const fetchAll = async () => {
+        try {
+            const r = await fetch(API);
+            const d = await r.json();
+            syncingRef.current = true;
+            setPagesState(d);
+        } finally {
+            syncingRef.current = false;
+        }
+    };
+
+    const syncPages = async (prev, next) => {
+        if (!initializedRef.current || syncingRef.current) return;
+        try {
+            const prevMap = new Map(prev.map(p => [String(p.id), p]));
+            const nextMap = new Map(next.map(n => [String(n.id), n]));
+
+            for (const n of next) {
+                const key = String(n.id ?? '');
+                if (!key || !prevMap.has(key)) {
+                    const payload = { ...n };
+                    delete payload.id;
+                    await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                }
+            }
+
+            for (const p of prev) {
+                const key = String(p.id ?? '');
+                if (key && !nextMap.has(key)) {
+                    await fetch(`${API}/${key}`, { method: 'DELETE' });
+                }
+            }
+
+            for (const n of next) {
+                const key = String(n.id ?? '');
+                if (key && prevMap.has(key)) {
+                    const prevItem = prevMap.get(key);
+                    if (JSON.stringify(prevItem) !== JSON.stringify(n)) {
+                        const payload = { ...n };
+                        delete payload.id;
+                        await fetch(`${API}/${key}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    }
+                }
+            }
+        } finally {
+            await fetchAll();
+        }
+    };
+
+    const setPages = (updater) => {
+        setPagesState(prev => {
+            const next = typeof updater === 'function' ? updater(prev) : updater;
+            if (initializedRef.current && !syncingRef.current) syncPages(prev, next);
+            return next;
+        });
+    };
+
     return (
         <PagesState.Provider value={{ pages, setPages }}>
             {children}
