@@ -11,7 +11,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 const root = ReactDOM.createRoot(document.getElementById('root')).render(
   <PageStateProvider>
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <BrowserRouter>
       <Routes>
             <Route path="*" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
