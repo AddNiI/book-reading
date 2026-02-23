@@ -3,10 +3,10 @@ import background_picture_desctop from './pictures/Registration_picture_for_desc
 import google_logo from './pictures/google_logo.png';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
-import { LoginsState } from './loginsstate.jsx';
+import { PageState } from './pagestate.jsx';
 
 function Registration() {
-    const { users, setUsers } = useContext(LoginsState);
+    const { users, setUsers } = useContext(PageState);
     const navigate = useNavigate();
     const [register, setRegistration] = useState({ name: '', email: '', password: '', passwordRepeat: '' });
     const onChange = e => {
@@ -20,16 +20,13 @@ function Registration() {
         const passwordRepeat = register.passwordRepeat.trim();
         const lastId = users.length > 0 ? Math.max(...users.map(u => u.userid)) : 0;
         const userid = lastId + 1;
-        if (users.some(u => u.email === email)) {
-            alert('Такий користувач вже є')
-        } else if (password !== passwordRepeat) {
-            alert('паролi не спiвпадають')
-        } else if (name.length >= 3 && email.length >= 3 && password.length >= 8) {
-            setUsers(prev => [...prev, {userid, name, email, password, training: false, finishDate: '', readDays: ''}]);
-            navigate("/login");
-        } else {
-            alert("Iм'я або пошта менше 3 символiв або пароль менше 8 символiв")
-        }
+        return users.some(u => u.email === email)
+            ? (alert('Такий користувач вже є'), undefined)
+            : password !== passwordRepeat
+                ? (alert('паролi не спiвпадають'), undefined)
+                : name.length >= 3 && email.length >= 3 && password.length >= 8
+                    ? (setUsers(prev => [...prev, {userid, name, email, password, training: false, finishDate: '', readDays: ''}]), navigate("/login"))
+                    : (alert("Iм'я або пошта менше 3 символiв або пароль менше 8 символiв"), undefined);
     }
 
     return (

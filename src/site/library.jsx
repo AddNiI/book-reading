@@ -1,10 +1,6 @@
 import  { React, useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LoginsState } from './loginsstate.jsx';
-import { BooksState } from './booksstate.jsx';
-import librarypng from './pictures/library.png'
-import home from './pictures/home.png'
-import vertical_hr from './pictures/vertical_hr.png'
+import { PageState } from './pagestate.jsx';
 
 const StarEmpty = ({ keyProp }) => (
     <svg width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg" key={keyProp}>
@@ -44,11 +40,11 @@ function Modal({ initialMark = 0, initialReview = '', onClose, onSave }) {
     };
     return (
         <div onClick={onClose} style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center'}} >
-            <div onClick={e => e.stopPropagation()} style={{background:'#fff', width: '570px', height: '408px', padding: '20px', borderRadius: '6px '}}>
-                <p>Обрати рейтинг книги</p>
+            <div onClick={e => e.stopPropagation()} style={{background:'#fff', width: '510px', height: '348px', padding: '30px', borderRadius: '6px '}}>
+                <p style={{margin: '0 0 15px'}}>Обрати рейтинг книги</p>
                 <div style={{display: 'flex'}}>
                     {[1,2,3,4,5].map(n => (
-                        <button key={n} data-value={n} onClick={setMark} style={{background:'transparent', border:0, padding:0}}>
+                        <button key={n} data-value={n} onClick={setMark} style={{background:'transparent', border: '0', padding: '0', cursor: 'pointer'}}>
                             {n <= rating
                                 ? <StarFilled keyProp={n} />
                                 : (!touched && rating === 0)
@@ -58,11 +54,11 @@ function Modal({ initialMark = 0, initialReview = '', onClose, onSave }) {
                         </button>
                     ))}
                 </div>
-                <p>Резюме</p>
-                <input value={localReview} onChange={e => setLocalReview(e.target.value)} style={{width:'100%', boxSizing:'border-box'}} />
+                <p style={{margin: '10px 0 0'}}>Резюме</p>
+                <textarea value={localReview} onChange={e => setLocalReview(e.target.value)} style={{resize: 'none', width:'100%', boxSizing:'border-box', margin: '12px 0 15px 0', width: '510px', height: '174px', whiteSpace: 'pre-wrap'}} />
                 <div style={{display:'flex', gap:8, marginTop:12}}>
-                    <button onClick={onClose}>Назад</button>
-                    <button onClick={() => { onSave && onSave(rating, localReview); }}>Зберегти</button>
+                    <button onClick={onClose} style={{backgroundColor: "#fff", border: '1px solid #242A37', width: '130px', height: '40px', margin: '0 30px 0 110px', cursor: 'pointer'}}>Назад</button>
+                    <button onClick={() => { onSave && onSave(rating, localReview); }} style={{color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '15px', padding: '11px 28px', cursor: 'pointer'}}>Зберегти</button>
                 </div>
             </div>
         </div>
@@ -76,11 +72,11 @@ function Library() {
     const [focused2, setFocused2] = useState(false);
     const [focused3, setFocused3] = useState(false);
     const [focused4, setFocused4] = useState(false);
-    const { currentUser } = useContext(LoginsState);
-    const name = currentUser?.name;
+    const { currentUser } = useContext(PageState);
+    const name = (currentUser && typeof currentUser.name === 'string') ? currentUser.name : '';
     const firstLetter = name.trim().charAt(0).toUpperCase();
     const uid = currentUser?.userid;
-    const { books, setBooks} = useContext(BooksState);
+    const { books, setBooks} = useContext(PageState);
     const wantread = [];
     const reading = [];
     const finish = [];
@@ -125,12 +121,23 @@ function Library() {
                 </div>
                 <div style={{justifyContent: 'end', display: 'flex'}}>
                     <Link to="/training">
-                        <img src={librarypng} />
+                        <div style={{width: 33,height: 33, borderRadius: '50%',background: '#F5F7FA', margin: '0 0 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                            <svg width="22" height="17" viewBox="0 0 22 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 0.5C18.89 0.15 17.67 0 16.5 0C14.55 0 12.45 0.4 11 1.5C9.55 0.4 7.45 0 5.5 0C3.55 0 1.45 0.4 0 1.5V16.15C0 16.4 0.25 16.65 0.5 16.65C0.6 16.65 0.65 16.6 0.75 16.6C2.1 15.95 4.05 15.5 5.5 15.5C7.45 15.5 9.55 15.9 11 17C12.35 16.15 14.8 15.5 16.5 15.5C18.15 15.5 19.85 15.8 21.25 16.55C21.35 16.6 21.4 16.6 21.5 16.6C21.75 16.6 22 16.35 22 16.1V1.5C21.4 1.05 20.75 0.75 20 0.5ZM20 14C18.9 13.65 17.7 13.5 16.5 13.5C14.8 13.5 12.35 14.15 11 15V3.5C12.35 2.65 14.8 2 16.5 2C17.7 2 18.9 2.15 20 2.5V14Z" fill="#A6ABB9"/>
+                                <path d="M16.5 6C17.38 6 18.23 6.09 19 6.26V4.74C18.21 4.59 17.36 4.5 16.5 4.5C14.8 4.5 13.26 4.79 12 5.33V6.99C13.13 6.35 14.7 6 16.5 6Z" fill="#A6ABB9"/>
+                                <path d="M12 7.99016V9.65016C13.13 9.01016 14.7 8.66016 16.5 8.66016C17.38 8.66016 18.23 8.75016 19 8.92016V7.40016C18.21 7.25016 17.36 7.16016 16.5 7.16016C14.8 7.16016 13.26 7.46016 12 7.99016Z" fill="#A6ABB9"/>
+                                <path d="M16.5 9.83008C14.8 9.83008 13.26 10.1201 12 10.6601V12.3201C13.13 11.6801 14.7 11.3301 16.5 11.3301C17.38 11.3301 18.23 11.4201 19 11.5901V10.0701C18.21 9.91008 17.36 9.83008 16.5 9.83008Z" fill="#A6ABB9"/>
+                            </svg>
+                        </div>
                     </Link>
                     <Link to="/library">
-                        <img src={home} style={{height: '17px', margin: '8px 11px 8px 14px'}} />
+                        <svg style={{margin: '8px 11px 8px 14px'}} width="20" height="17" viewBox="0 0 20 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 2.69L15 7.19V15H13V9H7V15H5V7.19L10 2.69ZM10 0L0 9H3V17H9V11H11V17H17V9H20L10 0Z" fill="#A6ABB9"/>
+                        </svg>
                     </Link>
-                    <img src={vertical_hr} />
+                    <svg width="1" height="33" viewBox="0 0 1 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="0.5" y1="-2.18557e-08" x2="0.500001" y2="33" stroke="#E0E5EB"/>
+                    </svg>
                     <Link to="/login">
                         <p style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '7px 0 0 14px', textDecoration: 'underline'}}>Вихiд</p>
                     </Link>
@@ -226,11 +233,11 @@ function Library() {
                                 finish.map(book => (
                                     <div key={book.id} style={{backgroundColor: '#fff', display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, boxShadow: '0 2px 2px #091E3F1A', margin: '0 39px 10px calc(50%  - 601px)', width: '1202px'}}>
                                         <svg style={{margin: '20px 18px 20px 20px'}} width="22" height="17" viewBox="0 0 22 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M20 0.5C18.89 0.15 17.67 0 16.5 0C14.55 0 12.45 0.4 11 1.5C9.55 0.4 7.45 0 5.5 0C3.55 0 1.45 0.4 0 1.5V16.15C0 16.4 0.25 16.65 0.5 16.65C0.6 16.65 0.65 16.6 0.75 16.6C2.1 15.95 4.05 15.5 5.5 15.5C7.45 15.5 9.55 15.9 11 17C12.35 16.15 14.8 15.5 16.5 15.5C18.15 15.5 19.85 15.8 21.25 16.55C21.35 16.6 21.4 16.6 21.5 16.6C21.75 16.6 22 16.35 22 16.1V1.5C21.4 1.05 20.75 0.75 20 0.5ZM20 14C18.9 13.65 17.7 13.5 16.5 13.5C14.8 13.5 12.35 14.15 11 15V3.5C12.35 2.65 14.8 2 16.5 2C17.7 2 18.9 2.15 20 2.5V14Z" fill="#A6ABB9"/>
-                                            <path d="M16.5 6C17.38 6 18.23 6.09 19 6.26V4.74C18.21 4.59 17.36 4.5 16.5 4.5C14.8 4.5 13.26 4.79 12 5.33V6.99C13.13 6.35 14.7 6 16.5 6Z" fill="#A6ABB9"/>
-                                            <path d="M12 7.99003V9.65003C13.13 9.01003 14.7 8.66003 16.5 8.66003C17.38 8.66003 18.23 8.75003 19 8.92003V7.40003C18.21 7.25003 17.36 7.16003 16.5 7.16003C14.8 7.16003 13.26 7.46003 12 7.99003Z" fill="#A6ABB9"/>
-                                            <path d="M16.5 9.82996C14.8 9.82996 13.26 10.12 12 10.66V12.32C13.13 11.68 14.7 11.33 16.5 11.33C17.38 11.33 18.23 11.42 19 11.59V10.07C18.21 9.90996 17.36 9.82996 16.5 9.82996Z" fill="#A6ABB9"/>
-                                        </svg> 
+                                            <path d="M20 0.5C18.89 0.15 17.67 0 16.5 0C14.55 0 12.45 0.4 11 1.5C9.55 0.4 7.45 0 5.5 0C3.55 0 1.45 0.4 0 1.5V16.15C0 16.4 0.25 16.65 0.5 16.65C0.6 16.65 0.65 16.6 0.75 16.6C2.1 15.95 4.05 15.5 5.5 15.5C7.45 15.5 9.55 15.9 11 17C12.35 16.15 14.8 15.5 16.5 15.5C18.15 15.5 19.85 15.8 21.25 16.55C21.35 16.6 21.4 16.6 21.5 16.6C21.75 16.6 22 16.35 22 16.1V1.5C21.4 1.05 20.75 0.75 20 0.5ZM20 14C18.9 13.65 17.7 13.5 16.5 13.5C14.8 13.5 12.35 14.15 11 15V3.5C12.35 2.65 14.8 2 16.5 2C17.7 2 18.9 2.15 20 2.5V14Z" fill="#6D7A8D"/>
+                                            <path d="M16.5 6C17.38 6 18.23 6.09 19 6.26V4.74C18.21 4.59 17.36 4.5 16.5 4.5C14.8 4.5 13.26 4.79 12 5.33V6.99C13.13 6.35 14.7 6 16.5 6Z" fill="#6D7A8D"/>
+                                            <path d="M12 7.98991V9.64991C13.13 9.00991 14.7 8.65991 16.5 8.65991C17.38 8.65991 18.23 8.74991 19 8.91991V7.39991C18.21 7.24991 17.36 7.15991 16.5 7.15991C14.8 7.15991 13.26 7.45991 12 7.98991Z" fill="#6D7A8D"/>
+                                            <path d="M16.5 9.83008C14.8 9.83008 13.26 10.1201 12 10.6601V12.3201C13.13 11.6801 14.7 11.3301 16.5 11.3301C17.38 11.3301 18.23 11.4201 19 11.5901V10.0701C18.21 9.91008 17.36 9.83008 16.5 9.83008Z" fill="#6D7A8D"/>
+                                        </svg>
                                         <p style={{margin: '22px 18px 22px 0', width: '283px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.bookname}</p>
                                         <p style={{margin: '22px 18px 22px 0', width: '199px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.author}</p>
                                         <p style={{margin: '22px 65px 22px 0', width: '60px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.year}</p>
@@ -247,34 +254,32 @@ function Library() {
                                     <></>
                                 ) : (
                                     <div>
-                                        <p style={{margin: '44px 0 14px calc(50%  - 601px)', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 600}}>Читаю</p>
-                                        <div style={{display: 'flex', color: '#898F9F',  fontFamily: '"Montserrat", serif', fontWeight: 500}}>
-                                            <p style={{margin: '14px 520px 14px calc(50%  - 601px)'}}>Назва книги</p>
-                                            <p style={{margin: '14px 298px 14px 0'}}>Автор</p>
-                                            <p style={{margin: '14px 90px 14px 0'}}>Рік</p>
-                                            <p style={{margin: '14px 0'}}>Стор.</p>
-                                        </div>
-                                    </div>   
+                                        <div>
+                                            <p style={{margin: '44px 0 14px calc(50%  - 601px)', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 600}}>Читаю</p>
+                                            <div style={{display: 'flex', color: '#898F9F',  fontFamily: '"Montserrat", serif', fontWeight: 500}}>
+                                                <p style={{margin: '14px 520px 14px calc(50%  - 601px)'}}>Назва книги</p>
+                                                <p style={{margin: '14px 298px 14px 0'}}>Автор</p>
+                                                <p style={{margin: '14px 90px 14px 0'}}>Рік</p>
+                                                <p style={{margin: '14px 0'}}>Стор.</p>
+                                            </div>
+                                        </div>   
+                                        {reading.map(book => (
+                                            <div key={book.id} style={{backgroundColor: '#fff', display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, boxShadow: '0 2px 2px #091E3F1A', margin: '0 39px 10px calc(50%  - 601px)', width: '1202px'}}>
+                                                <svg style={{margin: '20px 18px 20px 20px'}} width="22" height="17" viewBox="0 0 22 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M20 0.5C18.89 0.15 17.67 0 16.5 0C14.55 0 12.45 0.4 11 1.5C9.55 0.4 7.45 0 5.5 0C3.55 0 1.45 0.4 0 1.5V16.15C0 16.4 0.25 16.65 0.5 16.65C0.6 16.65 0.65 16.6 0.75 16.6C2.1 15.95 4.05 15.5 5.5 15.5C7.45 15.5 9.55 15.9 11 17C12.35 16.15 14.8 15.5 16.5 15.5C18.15 15.5 19.85 15.8 21.25 16.55C21.35 16.6 21.4 16.6 21.5 16.6C21.75 16.6 22 16.35 22 16.1V1.5C21.4 1.05 20.75 0.75 20 0.5ZM20 14C18.9 13.65 17.7 13.5 16.5 13.5C14.8 13.5 12.35 14.15 11 15V3.5C12.35 2.65 14.8 2 16.5 2C17.7 2 18.9 2.15 20 2.5V14Z" fill="#FF6B08"/>
+                                                    <path d="M16.5 6C17.38 6 18.23 6.09 19 6.26V4.74C18.21 4.59 17.36 4.5 16.5 4.5C14.8 4.5 13.26 4.79 12 5.33V6.99C13.13 6.35 14.7 6 16.5 6Z" fill="#FF6B08"/>
+                                                    <path d="M12 7.98991V9.64991C13.13 9.00991 14.7 8.65991 16.5 8.65991C17.38 8.65991 18.23 8.74991 19 8.91991V7.39991C18.21 7.24991 17.36 7.15991 16.5 7.15991C14.8 7.15991 13.26 7.45991 12 7.98991Z" fill="#FF6B08"/>
+                                                    <path d="M16.5 9.83008C14.8 9.83008 13.26 10.1201 12 10.6601V12.3201C13.13 11.6801 14.7 11.3301 16.5 11.3301C17.38 11.3301 18.23 11.4201 19 11.5901V10.0701C18.21 9.91008 17.36 9.83008 16.5 9.83008Z" fill="#FF6B08"/>
+                                                </svg>
+                                                <p style={{margin: '22px 18px 22px 0', width: '548px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.bookname}</p>
+                                                <p style={{margin: '22px 18px 22px 0', width: '330px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.author}</p>
+                                                <p style={{margin: '22px 57px 22px 0', width: '60px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.year}</p>
+                                                <p style={{margin: '22px 15px 22px 0', width: '96px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.pages}</p>
+                                            </div>
+                                        ))}
+                                    </div>
                                 )
                             }
-                            {reading.length === 0 ? (
-                                <></>
-                            ) : (
-                                reading.map(book => (
-                                    <div key={book.id} style={{backgroundColor: '#fff', display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, boxShadow: '0 2px 2px #091E3F1A', margin: '0 39px 10px calc(50%  - 601px)', width: '1202px'}}>
-                                        <svg style={{margin: '20px 18px 20px 20px'}} width="22" height="17" viewBox="0 0 22 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M20 0.5C18.89 0.15 17.67 0 16.5 0C14.55 0 12.45 0.4 11 1.5C9.55 0.4 7.45 0 5.5 0C3.55 0 1.45 0.4 0 1.5V16.15C0 16.4 0.25 16.65 0.5 16.65C0.6 16.65 0.65 16.6 0.75 16.6C2.1 15.95 4.05 15.5 5.5 15.5C7.45 15.5 9.55 15.9 11 17C12.35 16.15 14.8 15.5 16.5 15.5C18.15 15.5 19.85 15.8 21.25 16.55C21.35 16.6 21.4 16.6 21.5 16.6C21.75 16.6 22 16.35 22 16.1V1.5C21.4 1.05 20.75 0.75 20 0.5ZM20 14C18.9 13.65 17.7 13.5 16.5 13.5C14.8 13.5 12.35 14.15 11 15V3.5C12.35 2.65 14.8 2 16.5 2C17.7 2 18.9 2.15 20 2.5V14Z" fill="#A6ABB9"/>
-                                            <path d="M16.5 6C17.38 6 18.23 6.09 19 6.26V4.74C18.21 4.59 17.36 4.5 16.5 4.5C14.8 4.5 13.26 4.79 12 5.33V6.99C13.13 6.35 14.7 6 16.5 6Z" fill="#A6ABB9"/>
-                                            <path d="M12 7.99003V9.65003C13.13 9.01003 14.7 8.66003 16.5 8.66003C17.38 8.66003 18.23 8.75003 19 8.92003V7.40003C18.21 7.25003 17.36 7.16003 16.5 7.16003C14.8 7.16003 13.26 7.46003 12 7.99003Z" fill="#A6ABB9"/>
-                                            <path d="M16.5 9.82996C14.8 9.82996 13.26 10.12 12 10.66V12.32C13.13 11.68 14.7 11.33 16.5 11.33C17.38 11.33 18.23 11.42 19 11.59V10.07C18.21 9.90996 17.36 9.82996 16.5 9.82996Z" fill="#A6ABB9"/>
-                                        </svg> 
-                                        <p style={{margin: '22px 18px 22px 0', width: '548px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.bookname}</p>
-                                        <p style={{margin: '22px 18px 22px 0', width: '330px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.author}</p>
-                                        <p style={{margin: '22px 57px 22px 0', width: '60px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.year}</p>
-                                        <p style={{margin: '22px 15px 22px 0', width: '96px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.pages}</p>
-                                    </div>
-                                ))
-                            )}
                         </div>
                         <div style={{paddingBottom: '100%'}}>
                             {wantread.length === 0 ? (
