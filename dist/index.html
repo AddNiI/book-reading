@@ -9,35 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@700&display=swap" rel="stylesheet">
     <title>Book Reading</title>
-    <script>
-      (function(){
-        try {
-          if (location.hostname === 'addnii.github.io') return;
-          if (sessionStorage.getItem('book_reading_redirected')) return;
-
-          // помечаем, если пользователь нажал F5/Ctrl/Cmd+R или инициировал выгрузку страницы
-          window.addEventListener('keydown', function(e){
-            if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r')) {
-              sessionStorage.setItem('book_reading_should_redirect', '1');
-            }
-          }, {passive: true});
-          window.addEventListener('beforeunload', function(){ 
-            sessionStorage.setItem('book_reading_should_redirect', '1');
-          });
-
-          const navEntries = performance.getEntriesByType?.('navigation') || [];
-          const nav = navEntries[0];
-          const isReload = nav ? nav.type === 'reload' : (performance.navigation && performance.navigation.type === 1);
-
-          if (isReload || sessionStorage.getItem('book_reading_should_redirect')) {
-            sessionStorage.setItem('book_reading_redirected', '1');
-            sessionStorage.removeItem('book_reading_should_redirect');
-            window.location.replace('https://addnii.github.io/book-reading/');
-          }
-        } catch (e) {}
-      })();
-    </script>
-    <script type="module" crossorigin src="/book-reading/assets/index-Btw9b-o8.js"></script>
+    <script type="module" crossorigin src="/book-reading/assets/index-FNw7l5Qr.js"></script>
     <link rel="stylesheet" crossorigin href="/book-reading/assets/index-BsZ6uQZU.css">
   </head>
   <body>
