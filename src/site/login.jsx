@@ -16,7 +16,7 @@ function Login() {
         if (!user) { alert("Користувача з такою поштою не існує !"); return; }
         if (user.password !== password) { alert("Неправильний пароль !"); return; }
         loginUser ? loginUser(user) : null;
-        navigate("/library");
+        navigate("/book-reading/library");
     };
 
     return (
@@ -38,7 +38,7 @@ function Login() {
                                 <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder='Пароль' style={{fontFamily: '"Montserrat", serif', fontWeight: 400, color: '#A6ABB9', backgroundColor: '#F5F7FA', border: '0', padding: '0 0 0 13px', boxShadow: 'inset 0 1px 2px #1D1D1B26', width:'307px', height: '42px'}} />
                             </div>
                             <button onClick={loginClick} style={{marginTop: '30px', color:'#fff', border: '0', backgroundColor: '#FF6B08', padding: '22px 133px', display: 'flex', justifyContent: 'center'}}><h3 style={{fontFamily: '"Montserrat", serif', fontWeight: 600, margin: '0'}}>Увійти</h3></button>
-                            <Link to="/registration">
+                            <Link to="/book-reading/registration">
                                 <h5 style={{fontFamily: '"Montserrat", serif', fontWeight: 500, textDecoration: 'underline', color: '#FF6B08', margin: '19px 0 0 122px'}}>Реєстрація</h5>
                             </Link>
                         </div>

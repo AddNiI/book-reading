@@ -25,7 +25,7 @@ function Registration() {
             : password !== passwordRepeat
                 ? (alert('паролi не спiвпадають'), undefined)
                 : name.length >= 3 && email.length >= 3 && password.length >= 8
-                    ? (setUsers(prev => [...prev, {userid, name, email, password, training: false, finishDate: '', readDays: ''}]), navigate("/login"))
+                    ? (setUsers(prev => [...prev, {userid, name, email, password, training: false, finishDate: '', readDays: ''}]), navigate("/book-reading/login"))
                     : (alert("Iм'я або пошта менше 3 символiв або пароль менше 8 символiв"), undefined);
     }
 
@@ -56,7 +56,7 @@ function Registration() {
                                 <input name='passwordRepeat' value={register.passwordRepeat} onChange={onChange} placeholder='...' style={{fontFamily: '"Montserrat", serif', fontWeight: 400, color: '#A6ABB9', backgroundColor: '#F5F7FA', border: '0', padding: '0 0 0 13px', boxShadow: 'inset 0 1px 2px #1D1D1B26', width:'307px', height: '42px'}} />
                             </div>
                             <button onClick={submitData} style={{marginTop: '36px', color:'#fff', border: '0', backgroundColor: '#FF6B08', padding: '20px 89px 21px', display: 'flex', justifyContent: 'center'}}><h3 style={{fontFamily: '"Montserrat", serif', fontWeight: 600, margin: '0'}}>Зареєструватися</h3></button>
-                            <Link to="/login" style={{textDecoration: 'none'}}>
+                            <Link to="/book-reading/login" style={{textDecoration: 'none'}}>
                                 <h5 style={{fontFamily: '"Montserrat", serif', fontWeight: 500, margin: '19px 0 0 92px', color: '#898F9F'}}>Вже з нами? <span style={{textDecoration: 'underline', color: '#FF6B08'}}>Увiйти</span></h5>
                             </Link>
                             </div>
