@@ -12,11 +12,11 @@ const root = ReactDOM.createRoot(document.getElementById('root')).render(
   <PageStateProvider>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
-            <Route path="*" element={<Navigate to="/book-reading/login" replace />} />
-            <Route path="/book-reading/login" element={<Login />} />
-            <Route path="/book-reading/library" element={<Library />} />
-            <Route path="/book-reading/registration" element={<Registration />} />
-            <Route path="/book-reading/training" element={<Training />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/registration" element={<Registration />} />
+            <Route path="/training" element={<Training />} />
       </Routes>
     </BrowserRouter>
   </PageStateProvider>
