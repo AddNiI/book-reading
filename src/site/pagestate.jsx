@@ -36,13 +36,26 @@ useEffect(() => {
 	const uid = currentUser?.id || currentUser?.userid;
 	if (!uid) return;
 	fetch(`${API_BASE}/getBooks.php?user_id=${uid}`)
-				.then(res => res.ok ? res.json() : Promise.reject())
-				.then(data => {
-					const userBooks = Array.isArray(data) ? data : [];
-					setBooks(userBooks);
-					const pagePromises = userBooks.map(b => fetch(`${API_BASE}/getPages.php?book_id=${b.id}`).then(r => r.ok ? r.json() : []));
-			return Promise.all(pagePromises);
-		})
+			.then(res => res.ok ? res.json() : Promise.reject())
+			.then(data => {
+				const raw = Array.isArray(data) ? data : [];
+				const userBooks = raw.map(b => {
+					const book = Object.assign({}, b);
+					book.id = book.id ?? book.ID ?? book.book_id ?? book.bookId ?? null;
+					book.user_id = book.user_id ?? book.userid ?? book.userId ?? book.user ?? null;
+					book.title = book.title ?? book.name ?? '';
+					book.author = book.author ?? book.writer ?? '';
+					book.year = book.year ? Number(book.year) : 0;
+					book.pages = book.pages ? Number(book.pages) : 0;
+					book.rating = book.rating ?? book.mark ?? 0;
+					book.finished = book.finished ? Boolean(Number(book.finished)) : false;
+					book.read_status = book.read_status ?? book.readStatus ?? 0;
+					return book;
+				});
+				setBooks(userBooks);
+				const pagePromises = userBooks.map(b => fetch(`${API_BASE}/getPages.php?book_id=${b.id}`).then(r => r.ok ? r.json() : []));
+				return Promise.all(pagePromises);
+			})
 		.then(pagesArrays => {
 			const allPages = (pagesArrays || []).flat();
 			setPages(allPages);
