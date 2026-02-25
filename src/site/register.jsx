@@ -1,4 +1,5 @@
 import { React, useState, useContext } from 'react';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost/api';
 import background_picture_desctop from './pictures/Registration_picture_for_desctop.jpg';
 import google_logo from './pictures/google_logo.png';
 import { Link } from 'react-router-dom';
@@ -18,7 +19,7 @@ function Registration() {
       console.log('google register tokenResponse:', tokenResponse);
         try {
             const redirectUri = window.location.origin + '/book-reading/login';
-            const res = await fetch("http://localhost/api/googleAuth.php", {
+            const res = await fetch(`${API_BASE}/googleAuth.php`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ code: tokenResponse.code, redirect_uri: redirectUri })
@@ -46,7 +47,7 @@ function Registration() {
 
     const submitData = async () => {
   try {
-    const res = await fetch("http://localhost/api/register.php", {
+    const res = await fetch(`${API_BASE}/register.php`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

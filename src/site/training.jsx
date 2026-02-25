@@ -1,4 +1,5 @@
 import  { useContext, useState, useEffect, useMemo } from 'react';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost/api';
 import { Link } from 'react-router-dom';
 import { PageState } from './pagestate.jsx';
 import { Line } from 'react-chartjs-2';
@@ -59,7 +60,7 @@ function Training() {
                 return;
             }
             try {
-                const response = await fetch(`http://localhost/api/getBooks.php?user_id=${uid}&query=${encodeURIComponent(value)}`);
+                const response = await fetch(`${API_BASE}/getBooks.php?user_id=${uid}&query=${encodeURIComponent(value)}`);
                 const data = await response.json();
                 setNeedbooks(data);
             } catch (error) {
@@ -169,7 +170,7 @@ function Training() {
 
     const readDays = Math.max(Math.ceil((new Date(date2) - new Date(date1)) / (1000 * 60 * 60 * 24)), 0);
 
-    fetch('http://localhost/api/startTraining.php', {
+    fetch(`${API_BASE}/startTraining.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -203,7 +204,7 @@ function Training() {
 
     if (isInvalid) return alert("Заповніть дані");
     try {
-        const res = await fetch("http://localhost/api/addPage.php", {
+        const res = await fetch(`${API_BASE}/addPage.php`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ book_id: activeBook.id, user_id: uid, pages_count: pCount, date: data4 })
@@ -225,7 +226,7 @@ function Training() {
     
     const finishBook = async (id) => {
         try {
-            const res = await fetch('http://localhost/api/updateBook.php', {
+            const res = await fetch(`${API_BASE}/updateBook.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ book_id: id, finished: 1 })
@@ -243,7 +244,7 @@ function Training() {
     }
     const unfinishBook = async (id) => {
         try {
-            const res = await fetch('http://localhost/api/updateBook.php', {
+            const res = await fetch(`${API_BASE}/updateBook.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ book_id: id, finished: 0 })

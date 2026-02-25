@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost/api';
 import background_picture_desctop from './pictures/Registration_picture_for_desctop.jpg';
 import google_logo from './pictures/google_logo.png';
 import { Link } from 'react-router-dom';
@@ -14,7 +15,7 @@ function Login() {
         const handleGoogleLoginSuccess = async (tokenResponse) => {
             try {
                 const redirectUri = window.location.origin + '/book-reading/login';
-                const res = await fetch("http://localhost/api/googleAuth.php", {
+                const res = await fetch(`${API_BASE}/googleAuth.php`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ code: tokenResponse.code, redirect_uri: redirectUri })
@@ -40,7 +41,7 @@ function Login() {
         });
     const loginClick = async () => {
     try {
-    const res = await fetch("http://localhost/api/login.php", {
+    const res = await fetch(`${API_BASE}/login.php`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

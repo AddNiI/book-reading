@@ -1,4 +1,5 @@
 import { React, useContext, useState, useEffect } from 'react';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost/api';
 import { Link } from 'react-router-dom';
 import { PageState } from './pagestate.jsx';
 const StarEmpty = ({ keyProp }) => (
@@ -83,7 +84,7 @@ function Library() {
     const submitDataBook = async () => {
         const { title, author, year, pages } = library;
         try {
-            const res = await fetch("http://localhost/api/addBook.php", {
+            const res = await fetch(`${API_BASE}/addBook.php`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
@@ -99,7 +100,7 @@ function Library() {
                 return alert('Server error: ' + err);
             }
             
-            await fetch(`http://localhost/api/getBooks.php?user_id=${uid}`)
+            await fetch(`${API_BASE}/getBooks.php?user_id=${uid}`)
                 .then(r => r.ok ? r.json() : Promise.reject('getBooks failed'))
                     .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
                 .catch(() => {});
@@ -166,7 +167,7 @@ function Library() {
                         onClose={() => { setIsModalOpen(false); setSelectedBook(null); }}
                         onSave={async (newMark, newReview) => {
                                     try {
-                                        const res = await fetch('http://localhost/api/updateBook.php', {
+                                        const res = await fetch(`${API_BASE}/updateBook.php`, {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ book_id: selectedBook.id, rating: newMark, review: newReview })

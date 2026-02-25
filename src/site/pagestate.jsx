@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from "react";
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost/api';
 
 export const PageState = createContext();
 export function PageStateProvider({ children }) {
@@ -22,7 +23,7 @@ export function PageStateProvider({ children }) {
 	const raw = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
 	const savedUser = raw ? JSON.parse(raw) : null;
 	const uid = savedUser?.id || savedUser?.userid;
-	uid ? fetch(`http://localhost/api/me.php?id=${uid}`)
+	uid ? fetch(`${API_BASE}/me.php?id=${uid}`)
 		.then(res => res.ok ? res.json() : Promise.reject())
 		.then(actualUser => {
 			setCurrentUser(actualUser);
@@ -34,12 +35,12 @@ export function PageStateProvider({ children }) {
 useEffect(() => {
 	const uid = currentUser?.id || currentUser?.userid;
 	if (!uid) return;
-	fetch(`http://localhost/api/getBooks.php?user_id=${uid}`)
-		.then(res => res.ok ? res.json() : Promise.reject())
-		.then(data => {
-			const userBooks = Array.isArray(data) ? data : [];
-			setBooks(userBooks);
-			const pagePromises = userBooks.map(b => fetch(`http://localhost/api/getPages.php?book_id=${b.id}`).then(r => r.ok ? r.json() : []));
+	fetch(`${API_BASE}/getBooks.php?user_id=${uid}`)
+				.then(res => res.ok ? res.json() : Promise.reject())
+				.then(data => {
+					const userBooks = Array.isArray(data) ? data : [];
+					setBooks(userBooks);
+					const pagePromises = userBooks.map(b => fetch(`${API_BASE}/getPages.php?book_id=${b.id}`).then(r => r.ok ? r.json() : []));
 			return Promise.all(pagePromises);
 		})
 		.then(pagesArrays => {
