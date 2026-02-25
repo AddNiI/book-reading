@@ -17,17 +17,34 @@ const Logined = () => {
 const root = ReactDOM.createRoot(document.getElementById('root')).render(
   <PageStateProvider>
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/registration" element={<Registration />} />
-        <Route element={<Logined />}>
-          <Route path="/library" element={<Library />} />
-          <Route path="/training" element={<Training />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    </GoogleOAuthProvider>
+    {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+        <>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/registration" element={<Registration />} />
+            <Route element={<Logined />}>
+              <Route path="/library" element={<Library />} />
+              <Route path="/training" element={<Training />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </>
+      </GoogleOAuthProvider>
+    ) : (
+      <>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/registration" element={<Registration />} />
+          <Route element={<Logined />}>
+            <Route path="/library" element={<Library />} />
+            <Route path="/training" element={<Training />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </>
+    )}
+    
     </BrowserRouter>
   </PageStateProvider>
 );
