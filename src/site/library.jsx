@@ -1,4 +1,4 @@
-import { React, useContext, useState, useEffect } from 'react';
+import  React,с{ useContext, useState, useEffect } from 'react';
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://juniper-fractus-dorethea.ngrok-free.dev/api';
 import { Link } from 'react-router-dom';
 import { PageState } from './pagestate.jsx';
@@ -75,13 +75,18 @@ function Library() {
     const name = (currentUser && typeof currentUser.name === 'string') ? currentUser.name : '';
     const firstLetter = name.trim().charAt(0).toUpperCase();
     const uid = currentUser?.id || currentUser?.userid; 
-    useEffect(() => {
-        if (!uid) return;
-        fetch(`${API_BASE}/getBooks.php?user_id=${uid}`)
-            .then(r => r.ok ? r.json() : Promise.reject())
-            .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
-            .catch(err => console.error('getBooks failed', err));
-    }, [uid, setBooks]);
+        useEffect(() => {
+            if (!uid) return;
+            const url = `${API_BASE}/getBooks.php?user_id=${uid}`;
+            console.log('library: fetching books', { uid, url });
+            fetch(url)
+                .then(r => r.ok ? r.json() : Promise.reject(r))
+                .then(data => {
+                    console.log('library: getBooks response', data);
+                    setBooks ? setBooks(Array.isArray(data) ? data : []) : null;
+                })
+                .catch(err => console.error('library: getBooks failed', err));
+        }, [uid, setBooks]);
     const wantread = [];
     const reading = [];
     const finish = [];

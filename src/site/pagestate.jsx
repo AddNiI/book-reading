@@ -35,9 +35,12 @@ export function PageStateProvider({ children }) {
 useEffect(() => {
 	const uid = currentUser?.id || currentUser?.userid;
 	if (!uid) return;
-	fetch(`${API_BASE}/getBooks.php?user_id=${uid}`)
-			.then(res => res.ok ? res.json() : Promise.reject())
+	const url = `${API_BASE}/getBooks.php?user_id=${uid}`;
+	console.log('pagestate: fetching books', { uid, url });
+	fetch(url)
+			.then(res => res.ok ? res.json() : Promise.reject(res))
 			.then(data => {
+				console.log('pagestate: getBooks response', data);
 				const raw = Array.isArray(data) ? data : [];
 				const userBooks = raw.map(b => {
 					const book = Object.assign({}, b);
