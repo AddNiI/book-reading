@@ -1,5 +1,5 @@
 import { React, useState, useContext } from 'react';
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost/api';
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://juniper-fractus-dorethea.ngrok-free.dev/api';
 import background_picture_desctop from './pictures/Registration_picture_for_desctop.jpg';
 import google_logo from './pictures/google_logo.png';
 import { Link } from 'react-router-dom';
