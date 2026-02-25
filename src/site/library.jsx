@@ -75,6 +75,13 @@ function Library() {
     const name = (currentUser && typeof currentUser.name === 'string') ? currentUser.name : '';
     const firstLetter = name.trim().charAt(0).toUpperCase();
     const uid = currentUser?.id || currentUser?.userid; 
+    useEffect(() => {
+        if (!uid) return;
+        fetch(`${API_BASE}/getBooks.php?user_id=${uid}`)
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
+            .catch(err => console.error('getBooks failed', err));
+    }, [uid, setBooks]);
     const wantread = [];
     const reading = [];
     const finish = [];
