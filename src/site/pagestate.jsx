@@ -29,7 +29,7 @@ export function PageStateProvider({ children }) {
 			setCurrentUser(actualUser);
 			localStorage.setItem('currentUser', JSON.stringify(actualUser));
 		})
-		.catch(() => console.log("Сессия не подтверждена базой")) : null;
+		.catch(() => {}) : null;
 }, []);
 
 useEffect(() => {

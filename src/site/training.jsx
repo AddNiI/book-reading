@@ -64,7 +64,7 @@ function Training() {
                 const data = await response.json();
                 setNeedbooks(data);
             } catch (error) {
-                console.error("Ошибка при поиске книг:", error);
+                console.error("Помилка при пошуку книг:", error);
             }
         }
     };
@@ -233,13 +233,12 @@ function Training() {
             });
             if (!res.ok) {
                 const txt = await res.text();
-                alert('Ошибка сервера: ' + txt);
+                alert('Помилка сервера: ' + txt);
                 return;
             }
             setBooks(prev => prev.map(book => book.id === id ? {...book, finished: true} : book));
-            alert('Книга помечена как прочитанная');
         } catch (err) {
-            alert('Ошибка сети при пометке книги как прочитанной');
+            alert('Помилка мережі при помітці книги як прочитаної');
         }
     }
     const unfinishBook = async (id) => {
@@ -251,13 +250,12 @@ function Training() {
             });
             if (!res.ok) {
                 const txt = await res.text();
-                alert('Ошибка сервера: ' + txt);
+                alert('Помилка сервера: ' + txt);
                 return;
             }
             setBooks(prev => prev.map(book => book.id === id ? {...book, finished: false} : book));
-            alert('Отметка о прочтении снята');
         } catch (err) {
-            alert('Ошибка сети при снятии отметки');
+            alert('Помилка мережі при знятті позначки');
         }
     }
     const onChangePages = (value) => {

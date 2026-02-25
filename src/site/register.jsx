@@ -16,7 +16,6 @@ function Registration() {
         setRegistration(prev => ({...prev, [name]: value}));
     };
     const handleGoogleRegisterSuccess = async (tokenResponse) => {
-      console.log('google register tokenResponse:', tokenResponse);
         try {
             const redirectUri = window.location.origin + '/book-reading/login';
             const res = await fetch(`${API_BASE}/googleAuth.php`, {
