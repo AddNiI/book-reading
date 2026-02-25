@@ -12,37 +12,51 @@ function Login() {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-        const handleGoogleLoginSuccess = async (tokenResponse) => {
-            try {
-                const redirectUri = window.location.origin + '/book-reading/login';
-                const res = await fetch(`${API_BASE}/googleAuth.php`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ code: tokenResponse.code, redirect_uri: redirectUri })
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    alert(data.error || 'Помилка при вході через Google');
-                    return;
-                }
-                const user = data.user || data;
-                loginUser(user);
-                localStorage.setItem("currentUser", JSON.stringify(user));
-                navigate('/library');
-            } catch (err) {
-                console.error('Google login error:', err);
-                alert('Помилка при вході через Google');
+    
+    const handleGoogleLoginSuccess = (credentialResponse) => {
+        try {
+            const id_token = credentialResponse?.credential 
+                || credentialResponse?.id_token
+                || credentialResponse?.access_token;
+                
+            if (!id_token) {
+                alert('Помилка: не вдалося отримати токен від Google');
+                return;
             }
-        };
-        const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-        let googleLog = () => alert('Google OAuth не налаштовано');
-        if (googleClientId) {
-            googleLog = useGoogleLogin({
-                onSuccess: handleGoogleLoginSuccess,
-                flow: "auth-code",
-                redirect_uri: window.location.origin + '/book-reading/login'
+            
+            fetch(`${API_BASE}/googleAuth.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id_token: id_token })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    loginUser(data.user);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    navigate('/library');
+                } else {
+                    alert('Помилка: ' + (data.error || 'невідома помилка'));
+                }
+            })
+            .catch(err => {
+                alert('Помилка підключення до сервера');
             });
+        } catch (err) {
+            alert('Помилка при вході через Google');
         }
+    };
+    
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    let googleLogin = () => alert('Google OAuth не налаштовано');
+    if (googleClientId) {
+        googleLogin = useGoogleLogin({
+            onSuccess: handleGoogleLoginSuccess,
+            flow: "implicit"
+        });
+    }
     const loginClick = async () => {
     try {
     const res = await fetch(`${API_BASE}/login.php`, {
@@ -85,7 +99,13 @@ function Login() {
                 <div style={{backgroundImage: `url(${background_picture_desctop})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', height: 'calc(100vh - 60px)', aspectRatio: '113 / 158', width: 'auto' }}>
                     <div style={{ backgroundColor: '#091E3FCC', width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <div id='login-form' style={{ backgroundColor: 'white', height: '420px', width: '360px', paddingLeft: '40px'}}>
-                            <button onClick={() => googleLog()} style={{cursor: 'pointer', fontFamily: '"Roboto", serif', fontWeight: 700, color: '#707375', border: '0', backgroundColor: '#F5F7FA', padding: '11px 49px 11px 14px', display: 'flex', margin: '39px 0 0 85px', boxShadow: '0 2px 2px #091E3F26'}}><img src={google_logo} alt='G'style={{width: '18px', padding: '0 17px 0 0'}}></img><p style={{margin: '0'}}>Google</p></button>
+                            <button 
+                                onClick={() => googleLogin()} 
+                                style={{cursor: 'pointer', fontFamily: '"Roboto", serif', fontWeight: 700, color: '#707375', border: '0', backgroundColor: '#F5F7FA', padding: '11px 49px 11px 14px', display: 'flex', margin: '39px 0 0 85px', boxShadow: '0 2px 2px #091E3F26'}}
+                            >
+                                <img src={google_logo} alt='G' style={{width: '18px', padding: '0 17px 0 0'}}></img>
+                                <p style={{margin: '0'}}>Google</p>
+                            </button>
                             <div style={{marginTop: '22px'}}>
                                 <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, display: 'flex', margin: '0 0 11px', color: '#898F9F'}}>Електронна адреса<span style={{margin: '0 0 0 5px', color: '#f00'}}>*</span></p>
                                 <input type='email' value={email} onChange={(e) => setEmail(e.target.value)} placeholder='your@email.com' style={{fontFamily: '"Montserrat", serif', fontWeight: 400, color: '#A6ABB9', backgroundColor: '#F5F7FA', border: '0', padding: '0 0 0 13px', boxShadow: 'inset 0 1px 2px #1D1D1B26', width:'307px', height: '42px'}} />
