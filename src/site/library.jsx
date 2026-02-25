@@ -78,39 +78,20 @@ function Library() {
         useEffect(() => {
             if (!uid) return;
             const url = `${API_BASE}/getBooks.php?user_id=${uid}`;
-            console.log('library: fetching books', { uid, url });
             fetch(url)
                 .then(r => {
                     if (!r.ok) return Promise.reject(r);
                     const ct = (r.headers.get('content-type') || '').toLowerCase();
                     if (ct.includes('application/json')) return r.json();
-                    return r.text().then(txt => {
-                        console.error('library: getBooks returned non-JSON response', txt);
-                        return Promise.reject(new Error('NON_JSON'));
-                    });
+                    return r.text().then(() => Promise.reject(new Error('NON_JSON')));
                 })
-                .then(data => {
-                    console.log('library: getBooks response', data);
-                    setBooks ? setBooks(Array.isArray(data) ? data : []) : null;
-                })
-                .catch(err => {
-                    console.error('library: getBooks failed, trying localhost fallback', err);
+                .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
+                .catch(() => {
                     const fallbackUrl = url.replace(/https?:\/\/[^/]+\/api/, 'http://localhost/api');
                     fetch(fallbackUrl)
-                        .then(r => {
-                            if (!r.ok) return Promise.reject(r);
-                            const ct = (r.headers.get('content-type') || '').toLowerCase();
-                            if (ct.includes('application/json')) return r.json();
-                            return r.text().then(txt => {
-                                console.error('library: fallback returned non-JSON', txt);
-                                return Promise.reject(new Error('NON_JSON'));
-                            });
-                        })
-                        .then(data => {
-                            console.log('library: fallback getBooks response', data);
-                            setBooks ? setBooks(Array.isArray(data) ? data : []) : null;
-                        })
-                        .catch(err2 => console.error('library: fallback failed', err2));
+                        .then(r => r.ok ? r.json() : Promise.reject(r))
+                        .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
+                        .catch(() => {});
                 });
         }, [uid, setBooks]);
     const wantread = [];
@@ -135,7 +116,7 @@ function Library() {
             });
             if (!res.ok) {
                 const err = await res.text();
-                return alert('Server error: ' + err);
+                return alert('Помилка сервера: ' + err);
             }
             
             await fetch(`${API_BASE}/getBooks.php?user_id=${uid}`)
@@ -144,7 +125,7 @@ function Library() {
                 .catch(() => {});
             
             setLibrary({ title: '', author: '', year: '', pages: '' });
-            alert('Книга додана');
+            alert('Книгу додано');
         } catch (err) { alert('Помилка мережі'); }
     };
     books.forEach(book => {
@@ -212,13 +193,13 @@ function Library() {
                                         });
                                         if (!res.ok) {
                                             const txt = await res.text();
-                                            alert('Ошибка сервера: ' + txt);
+                                            alert('Помилка сервера: ' + txt);
                                         } else {
                                             setBooks ? setBooks(prev => prev.map(b => b.id === selectedBook.id ? {...b, rating: newMark, review: newReview} : b)) : null;
-                                            alert('Отзыв и оценка сохранены');
+                                            alert('Відгук та оцінку збережено');
                                         }
                                     } catch (err) {
-                                        alert('Ошибка сети при сохранении');
+                                        alert('Помилка мережі при збереженні');
                                     }
                                     setIsModalOpen(false);
                                     setSelectedBook(null);
