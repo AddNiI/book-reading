@@ -38,7 +38,7 @@ function Registration() {
         }
     };
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    let googleReg = () => alert("Google OAuth не налаштовано");
+    let googleReg = () => alert('Google OAuth не налаштовано');
     if (googleClientId) {
       googleReg = useGoogleLogin({
         onSuccess: handleGoogleRegisterSuccess,
@@ -97,7 +97,7 @@ function Registration() {
                 <div style={{width: '565px', backgroundImage: `url(${background_picture_desctop})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', height: 'calc(100vh - 60px)', aspectRatio: '113 / 158', width: 'auto' }}>
                     <div style={{ backgroundColor: '#091E3FCC', width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <div id='registration-form' style={{ backgroundColor: 'white', height: '610px', width: '360px', paddingLeft: '40px'}}>
-                            <button onClick={() => googleReg()} disabled={!googleClientId} style={{cursor: googleClientId ? 'pointer' : 'default', fontFamily: '"Roboto", serif', fontWeight: 700, color: '#707375', border: '0', backgroundColor: '#F5F7FA', padding: '11px 49px 11px 14px', display: 'flex', margin: '39px 0  0 85px', boxShadow: '0 2px 2px #091E3F26'}}><img src={google_logo} alt='G'style={{width: '18px', padding: '0 17px 0 0'}}></img><p style={{margin: '0'}}>Google</p></button>
+                            <button onClick={() => googleReg()} style={{cursor: 'pointer', fontFamily: '"Roboto", serif', fontWeight: 700, color: '#707375', border: '0', backgroundColor: '#F5F7FA', padding: '11px 49px 11px 14px', display: 'flex', margin: '39px 0  0 85px', boxShadow: '0 2px 2px #091E3F26'}}><img src={google_logo} alt='G'style={{width: '18px', padding: '0 17px 0 0'}}></img><p style={{margin: '0'}}>Google</p></button>
                             <div style={{marginTop: '22px'}}>
                                 <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, display: 'flex', margin: '0 0 11px', color: '#898F9F'}}>Ім’я<span style={{margin: '0 0 0 5px', color: '#f00'}}>*</span></p>
                                 <input type='text' name='name' value={register.name} onChange={onChange} placeholder='...' style={{fontFamily: '"Montserrat", serif', fontWeight: 400, color: '#A6ABB9', backgroundColor: '#F5F7FA', border: '0', padding: '0 0 0 13px', boxShadow: 'inset 0 1px 2px #1D1D1B26', width:'307px', height: '42px'}} />
