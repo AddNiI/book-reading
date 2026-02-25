@@ -1,4 +1,4 @@
-import  React,с{ useContext, useState, useEffect } from 'react';
+import  React,{ useContext, useState, useEffect } from 'react';
 const API_BASE = import.meta.env.VITE_API_BASE || 'https://juniper-fractus-dorethea.ngrok-free.dev/api';
 import { Link } from 'react-router-dom';
 import { PageState } from './pagestate.jsx';
