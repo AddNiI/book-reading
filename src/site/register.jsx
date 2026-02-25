@@ -29,7 +29,6 @@ function Registration() {
               alert(data.error || "Помилка реєстрації через Google");
               return;
             }
-            // Auto-login after successful Google registration
             const user = data.user || data;
             loginUser(user);
             localStorage.setItem("currentUser", JSON.stringify(user));
