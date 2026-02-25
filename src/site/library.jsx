@@ -1,7 +1,6 @@
-import  { React, useContext, useState } from 'react';
+import { React, useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PageState } from './pagestate.jsx';
-
 const StarEmpty = ({ keyProp }) => (
     <svg width="17" height="16" viewBox="0 0 17 16" fill="none" xmlns="http://www.w3.org/2000/svg" key={keyProp}>
         <path d="M9.5166 6.02832L9.62891 6.37305H14.6289L10.8779 9.09863L10.584 9.3125L10.6963 9.6582L12.1279 14.0664L8.37793 11.3418L8.08398 11.1289L7.79004 11.3418L4.03906 14.0664L5.47168 9.6582L5.58398 9.3125L5.29004 9.09863L1.53906 6.37305H6.53906L6.65137 6.02832L8.08398 1.61816L9.5166 6.02832Z" stroke="#FF6B08"/>
@@ -58,13 +57,12 @@ function Modal({ initialMark = 0, initialReview = '', onClose, onSave }) {
                 <textarea value={localReview} onChange={e => setLocalReview(e.target.value)} style={{resize: 'none', width:'100%', boxSizing:'border-box', margin: '12px 0 15px 0', width: '510px', height: '174px', whiteSpace: 'pre-wrap'}} />
                 <div style={{display:'flex', gap:8, marginTop:12}}>
                     <button onClick={onClose} style={{backgroundColor: "#fff", border: '1px solid #242A37', width: '130px', height: '40px', margin: '0 30px 0 110px', cursor: 'pointer'}}>Назад</button>
-                    <button onClick={() => { onSave && onSave(rating, localReview); }} style={{color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '15px', padding: '11px 28px', cursor: 'pointer'}}>Зберегти</button>
+                    <button onClick={() => { onSave ? onSave(rating, localReview) : null; }} style={{color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '15px', padding: '11px 28px', cursor: 'pointer'}}>Зберегти</button>
                 </div>
             </div>
         </div>
     );
 }
-
 function Library() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedBook, setSelectedBook] = useState(null);
@@ -72,46 +70,50 @@ function Library() {
     const [focused2, setFocused2] = useState(false);
     const [focused3, setFocused3] = useState(false);
     const [focused4, setFocused4] = useState(false);
-    const { currentUser } = useContext(PageState);
+    const { currentUser, setCurrentUser, books, setBooks } = useContext(PageState);
     const name = (currentUser && typeof currentUser.name === 'string') ? currentUser.name : '';
     const firstLetter = name.trim().charAt(0).toUpperCase();
-    const uid = currentUser?.userid;
-    const { books, setBooks} = useContext(PageState);
+    const uid = currentUser?.id || currentUser?.userid; 
     const wantread = [];
     const reading = [];
     const finish = [];
     const notbooks = [];
-    const [library, setLibrary] = useState({ bookname: '', author: '', year: '', pages: '' });
-    const onChange = (value, name) => {
-        setLibrary(prev => ({...prev, [name]: value}));
+    const [library, setLibrary] = useState({ title: '', author: '', year: '', pages: '' });
+    const onChange = (value, name) => setLibrary(prev => ({...prev, [name]: value}));
+    const submitDataBook = async () => {
+        const { title, author, year, pages } = library;
+        try {
+            const res = await fetch("http://localhost/api/addBook.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    title: title, 
+                    author: author, 
+                    year: year ? parseInt(year) : 0, 
+                    pages: pages ? parseInt(pages) : 0, 
+                    user_id: uid 
+                })
+            });
+            if (!res.ok) {
+                const err = await res.text();
+                return alert('Server error: ' + err);
+            }
+            
+            await fetch(`http://localhost/api/getBooks.php?user_id=${uid}`)
+                .then(r => r.ok ? r.json() : Promise.reject('getBooks failed'))
+                    .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
+                .catch(() => {});
+            
+            setLibrary({ title: '', author: '', year: '', pages: '' });
+            alert('Книга додана');
+        } catch (err) { alert('Помилка мережі'); }
     };
-    const submitDataBook = () => {
-        const bookname = library.bookname.trim();
-        const author = library.author.trim();
-        const year = library.year.trim();
-        const pages = library.pages.trim();
-        const whatuserid = uid;
-        const lastbookid = books.length > 0 ? Math.max(...books.map(b => b.id)) : 0;
-        const id = lastbookid + 1;
-        books.some(b => b.bookname === library.bookname && b.author === library.author && b.year === library.year && b.pages === library.pages && b.whatuserid == uid)
-            ? alert('Така книга вже є') 
-            : (bookname.length >= 1 && author.length >= 1 && year.length >= 1 && pages.length >= 1 && pages >= 1) 
-                ? ( setBooks(prev => [...prev, {whatuserid: whatuserid, bookname: bookname, author: author, year: year, pages: pages, mark: 0, read: false, finished: false, id: id, review: '', inTraining: false}]),
-                    alert('Книга додана')
-                )
-                : alert("Пустi поля, aбо некоректнi значення")
-    }
     books.forEach(book => {
-        const bid = book.whatuserid;
-        bid == uid
-            ? (book.finished) 
-                ? finish.push(book)
-                :(book.read) 
-                    ? reading.push(book)
-                    : wantread.push(book)
+        book.user_id == uid
+            ? (book.finished ? finish.push(book) : (book.read_status ? reading.push(book) : wantread.push(book)))
             : notbooks.push(book);
-    })
-    return(
+    });
+    return (
         <div>
             <header style={{padding: '13.5px 15px', gridTemplateColumns: '1fr auto 1fr', boxShadow: '0 2px 2px #091E3F1A', display: 'grid', alignItems: 'center'}}>
                 <p style={{fontFamily: '"Abril Fatface", serif', fontWeight: 400, margin: '0', justifyContent: 'start'}}>BR</p>
@@ -139,7 +141,7 @@ function Library() {
                         <line x1="0.5" y1="-2.18557e-08" x2="0.500001" y2="33" stroke="#E0E5EB"/>
                     </svg>
                     <Link to="/login">
-                        <p style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '7px 0 0 14px', textDecoration: 'underline'}}>Вихiд</p>
+                        <p onClick={()=>{localStorage.removeItem("currentUser"), setCurrentUser(null)}} style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '7px 0 0 14px', textDecoration: 'underline'}}>Вихiд</p>
                     </Link>
                 </div>
             </header>
@@ -151,7 +153,7 @@ function Library() {
                         <p style={{margin: '42px 43px 14px 0'}}>Рiк видання</p>
                         <p style={{margin: '42px 0 14px'}}>Кiлькiсть сторiнок</p>
                     </div>
-                    <input onFocus={() => setFocused1(true)} onBlur={() => setFocused1(false)} value={library.bookname} onChange={e => onChange(e.target.value, 'bookname')} placeholder='...' style={{outline: 'none',fontWeight: 400, color: '#A6ABB9', backgroundColor: focused1 ? '#fff' : '#F6F7FB', border: focused1 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: '0 15px 0 calc(50% - 560px)', width:'331px', height: '42px', boxShadow: focused1 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
+                    <input onFocus={() => setFocused1(true)} onBlur={() => setFocused1(false)} value={library.title} onChange={e => onChange(e.target.value, 'title')} placeholder='...' style={{outline: 'none',fontWeight: 400, color: '#A6ABB9', backgroundColor: focused1 ? '#fff' : '#F6F7FB', border: focused1 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: '0 15px 0 calc(50% - 560px)', width:'331px', height: '42px', boxShadow: focused1 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
                     <input onFocus={() => setFocused2(true)} onBlur={() => setFocused2(false)} value={library.author} onChange={e => onChange(e.target.value, 'author')} placeholder='...' style={{outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused2 ? '#fff' : '#F6F7FB', border: focused2 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: '0 15px 0 0', width:'235px', height: '42px', boxShadow: focused2 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
                     <input onFocus={() => setFocused3(true)} onBlur={() => setFocused3(false)} type='number' value={library.year} onChange={e => onChange(e.target.value, 'year')} placeholder='...' style={{outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused3 ? '#fff' : '#F6F7FB', border: focused3 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: '0 15px 0 0', width:'115px', height: '42px', boxShadow: focused3 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
                     <input onFocus={() => setFocused4(true)} onBlur={() => setFocused4(false)} type='number' value={library.pages} onChange={e => onChange(e.target.value, 'pages')} placeholder='...' style={{outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused4 ? '#fff' : '#F6F7FB', border: focused4 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: '0 45px 0 0', width:'119px', height: '42px', boxShadow: focused4 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}}/>
@@ -159,14 +161,29 @@ function Library() {
                 </div>
                 {isModalOpen && selectedBook && (
                     <Modal
-                        initialMark={selectedBook.mark}
+                        initialMark={selectedBook.rating || selectedBook.mark}
                         initialReview={selectedBook.review}
                         onClose={() => { setIsModalOpen(false); setSelectedBook(null); }}
-                        onSave={(newMark, newReview) => {
-                            setBooks(prev => prev.map(b => b.id === selectedBook.id ? {...b, mark: newMark, review: newReview} : b));
-                            setIsModalOpen(false);
-                            setSelectedBook(null);
-                        }}
+                        onSave={async (newMark, newReview) => {
+                                    try {
+                                        const res = await fetch('http://localhost/api/updateBook.php', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ book_id: selectedBook.id, rating: newMark, review: newReview })
+                                        });
+                                        if (!res.ok) {
+                                            const txt = await res.text();
+                                            alert('Ошибка сервера: ' + txt);
+                                        } else {
+                                            setBooks ? setBooks(prev => prev.map(b => b.id === selectedBook.id ? {...b, rating: newMark, review: newReview} : b)) : null;
+                                            alert('Отзыв и оценка сохранены');
+                                        }
+                                    } catch (err) {
+                                        alert('Ошибка сети при сохранении');
+                                    }
+                                    setIsModalOpen(false);
+                                    setSelectedBook(null);
+                                }}
                     />
                 )}
                 {finish.length === 0 && reading.length === 0 && wantread.length === 0 ? (
@@ -238,11 +255,11 @@ function Library() {
                                             <path d="M12 7.98991V9.64991C13.13 9.00991 14.7 8.65991 16.5 8.65991C17.38 8.65991 18.23 8.74991 19 8.91991V7.39991C18.21 7.24991 17.36 7.15991 16.5 7.15991C14.8 7.15991 13.26 7.45991 12 7.98991Z" fill="#6D7A8D"/>
                                             <path d="M16.5 9.83008C14.8 9.83008 13.26 10.1201 12 10.6601V12.3201C13.13 11.6801 14.7 11.3301 16.5 11.3301C17.38 11.3301 18.23 11.4201 19 11.5901V10.0701C18.21 9.91008 17.36 9.83008 16.5 9.83008Z" fill="#6D7A8D"/>
                                         </svg>
-                                        <p style={{margin: '22px 18px 22px 0', width: '283px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.bookname}</p>
+                                        <p style={{margin: '22px 18px 22px 0', width: '283px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.title}</p>
                                         <p style={{margin: '22px 18px 22px 0', width: '199px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.author}</p>
                                         <p style={{margin: '22px 65px 22px 0', width: '60px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.year}</p>
                                         <p style={{margin: '22px 23px 22px 0', width: '110px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.pages}</p>
-                                        <div style={{margin: '22px 0', width: '101px'}}><Stars value={book.mark} /></div>
+                                        <div style={{margin: '22px 0', width: '101px'}}><Stars value={book.rating || book.mark} /></div>
                                         <button onClick={() => { setSelectedBook(book); setIsModalOpen(true); }} style={{margin: '11px 50px', color: '#fff', backgroundColor: '#6D7A8D', padding: '12px 36px', border: '0', width: '130px' }}>Резюме</button>
                                     </div>
                                 ))
@@ -271,7 +288,7 @@ function Library() {
                                                     <path d="M12 7.98991V9.64991C13.13 9.00991 14.7 8.65991 16.5 8.65991C17.38 8.65991 18.23 8.74991 19 8.91991V7.39991C18.21 7.24991 17.36 7.15991 16.5 7.15991C14.8 7.15991 13.26 7.45991 12 7.98991Z" fill="#FF6B08"/>
                                                     <path d="M16.5 9.83008C14.8 9.83008 13.26 10.1201 12 10.6601V12.3201C13.13 11.6801 14.7 11.3301 16.5 11.3301C17.38 11.3301 18.23 11.4201 19 11.5901V10.0701C18.21 9.91008 17.36 9.83008 16.5 9.83008Z" fill="#FF6B08"/>
                                                 </svg>
-                                                <p style={{margin: '22px 18px 22px 0', width: '548px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.bookname}</p>
+                                                <p style={{margin: '22px 18px 22px 0', width: '548px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.title}</p>
                                                 <p style={{margin: '22px 18px 22px 0', width: '330px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.author}</p>
                                                 <p style={{margin: '22px 57px 22px 0', width: '60px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.year}</p>
                                                 <p style={{margin: '22px 15px 22px 0', width: '96px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.pages}</p>
@@ -286,7 +303,7 @@ function Library() {
                                 <></>
                             ) : (
                                     <div>
-                                        <p style={{margin: '44px 0 14px calc(50%  - 601px)', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 600}}s>Маю намір прочитати</p>
+                                        <p style={{margin: '44px 0 14px calc(50%  - 601px)', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 600}}>Маю намір прочитати</p>
                                         <div style={{display: 'flex', color: '#898F9F',  fontFamily: '"Montserrat", serif', fontWeight: 500}}>
                                             <p style={{margin: '14px 520px 14px calc(50%  - 601px)'}}>Назва книги</p>
                                             <p style={{margin: '14px 298px 14px 0'}}>Автор</p>
@@ -307,7 +324,7 @@ function Library() {
                                             <path d="M12 7.99003V9.65003C13.13 9.01003 14.7 8.66003 16.5 8.66003C17.38 8.66003 18.23 8.75003 19 8.92003V7.40003C18.21 7.25003 17.36 7.16003 16.5 7.16003C14.8 7.16003 13.26 7.46003 12 7.99003Z" fill="#A6ABB9"/>
                                             <path d="M16.5 9.82996C14.8 9.82996 13.26 10.12 12 10.66V12.32C13.13 11.68 14.7 11.33 16.5 11.33C17.38 11.33 18.23 11.42 19 11.59V10.07C18.21 9.90996 17.36 9.82996 16.5 9.82996Z" fill="#A6ABB9"/>
                                         </svg> 
-                                        <p style={{margin: '22px 18px 22px 0', width: '548px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.bookname}</p>
+                                        <p style={{margin: '22px 18px 22px 0', width: '548px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.title}</p>
                                         <p style={{margin: '22px 18px 22px 0', width: '330px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.author}</p>
                                         <p style={{margin: '22px 57px 22px 0', width: '60px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.year}</p>
                                         <p style={{margin: '22px 15px 22px 0', width: '96px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.pages}</p>
