@@ -80,12 +80,38 @@ function Library() {
             const url = `${API_BASE}/getBooks.php?user_id=${uid}`;
             console.log('library: fetching books', { uid, url });
             fetch(url)
-                .then(r => r.ok ? r.json() : Promise.reject(r))
+                .then(r => {
+                    if (!r.ok) return Promise.reject(r);
+                    const ct = (r.headers.get('content-type') || '').toLowerCase();
+                    if (ct.includes('application/json')) return r.json();
+                    return r.text().then(txt => {
+                        console.error('library: getBooks returned non-JSON response', txt);
+                        return Promise.reject(new Error('NON_JSON'));
+                    });
+                })
                 .then(data => {
                     console.log('library: getBooks response', data);
                     setBooks ? setBooks(Array.isArray(data) ? data : []) : null;
                 })
-                .catch(err => console.error('library: getBooks failed', err));
+                .catch(err => {
+                    console.error('library: getBooks failed, trying localhost fallback', err);
+                    const fallbackUrl = url.replace(/https?:\/\/[^/]+\/api/, 'http://localhost/api');
+                    fetch(fallbackUrl)
+                        .then(r => {
+                            if (!r.ok) return Promise.reject(r);
+                            const ct = (r.headers.get('content-type') || '').toLowerCase();
+                            if (ct.includes('application/json')) return r.json();
+                            return r.text().then(txt => {
+                                console.error('library: fallback returned non-JSON', txt);
+                                return Promise.reject(new Error('NON_JSON'));
+                            });
+                        })
+                        .then(data => {
+                            console.log('library: fallback getBooks response', data);
+                            setBooks ? setBooks(Array.isArray(data) ? data : []) : null;
+                        })
+                        .catch(err2 => console.error('library: fallback failed', err2));
+                });
         }, [uid, setBooks]);
     const wantread = [];
     const reading = [];
