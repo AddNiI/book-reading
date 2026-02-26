@@ -138,10 +138,10 @@ function Registration() {
                             </Link>
                             <div style={{display: 'flex'}}>
                                 <Link to="/terms-of-service" style={{ textDecoration: 'none'}}>
-                                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '13px',color: '#FF6B08', margin: '15px 0'}}>Умови використання</p>
+                                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '12px',color: '#FF6B08', margin: '15px 0'}}>Умови використання</p>
                                 </Link>
                                 <Link to="/privacy-policy" style={{ textDecoration: 'none'}}>
-                                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '13px', color: '#FF6B08', margin: '15px 0 0 5px'}}>Політика конфіденційності</p>
+                                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '12px', color: '#FF6B08', margin: '15px 0 0 15px'}}>Політика конфіденційності</p>
                                 </Link>
                             </div>
                         </div>
