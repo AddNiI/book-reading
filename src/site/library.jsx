@@ -1,5 +1,5 @@
 import  React,{ useContext, useState, useEffect } from 'react';
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://juniper-fractus-dorethea.ngrok-free.dev/api';
+const API_BASE = import.meta.env.VITE_API_BASE;
 import { Link } from 'react-router-dom';
 import { PageState } from './pagestate.jsx';
 const StarEmpty = ({ keyProp }) => (
@@ -75,25 +75,25 @@ function Library() {
     const name = (currentUser && typeof currentUser.name === 'string') ? currentUser.name : '';
     const firstLetter = name.trim().charAt(0).toUpperCase();
     const uid = currentUser?.id || currentUser?.userid; 
-        useEffect(() => {
-            if (!uid) return;
-            const url = `${API_BASE}/getBooks.php?user_id=${uid}`;
-            fetch(url)
-                .then(r => {
-                    if (!r.ok) return Promise.reject(r);
-                    const ct = (r.headers.get('content-type') || '').toLowerCase();
-                    if (ct.includes('application/json')) return r.json();
-                    return r.text().then(() => Promise.reject(new Error('NON_JSON')));
-                })
-                .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
-                .catch(() => {
-                    const fallbackUrl = url.replace(/https?:\/\/[^/]+\/api/, 'http://localhost/api');
-                    fetch(fallbackUrl)
-                        .then(r => r.ok ? r.json() : Promise.reject(r))
-                        .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
-                        .catch(() => {});
-                });
-        }, [uid, setBooks]);
+    useEffect(() => {
+        if (!uid) return;
+        const url = `${API_BASE}/getBooks.php?user_id=${uid}`;
+        fetch(url)
+            .then(r => {
+                if (!r.ok) return Promise.reject(r);
+                const ct = (r.headers.get('content-type') || '').toLowerCase();
+                if (ct.includes('application/json')) return r.json();
+                return r.text().then(() => Promise.reject(new Error('NON_JSON')));
+            })
+            .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
+            .catch(() => {
+                const fallbackUrl = url.replace(/https?:\/\/[^/]+\/api/, 'http://localhost/api');
+                fetch(fallbackUrl)
+                    .then(r => r.ok ? r.json() : Promise.reject(r))
+                    .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
+                    .catch(() => {});
+            });
+    }, [uid, setBooks]);
     const wantread = [];
     const reading = [];
     const finish = [];
@@ -118,12 +118,49 @@ function Library() {
                 const err = await res.text();
                 return alert('Помилка сервера: ' + err);
             }
-            
-            await fetch(`${API_BASE}/getBooks.php?user_id=${uid}`)
+            const url = `${API_BASE}/getBooks.php?user_id=${uid}`;
+            await fetch(url)
                 .then(r => r.ok ? r.json() : Promise.reject('getBooks failed'))
-                    .then(data => setBooks ? setBooks(Array.isArray(data) ? data : []) : null)
-                .catch(() => {});
-            
+                .then(data => {
+                    const raw = Array.isArray(data) ? data : [];
+                    const userBooks = raw.map(b => {
+                        const book = Object.assign({}, b);
+                        book.id = book.id ?? book.ID ?? book.book_id ?? book.bookId ?? null;
+                        book.user_id = book.user_id ?? book.userid ?? book.userId ?? book.user ?? null;
+                        book.title = book.title ?? book.name ?? '';
+                        book.author = book.author ?? book.writer ?? '';
+                        book.year = book.year ? Number(book.year) : 0;
+                        book.pages = book.pages ? Number(book.pages) : 0;
+                        book.rating = book.rating ?? book.mark ?? 0;
+                        book.finished = book.finished ? Boolean(Number(book.finished)) : false;
+                        book.read_status = book.read_status ?? book.readStatus ?? 0;
+                        return book;
+                    });
+                    setBooks ? setBooks(userBooks) : null;
+                })
+                .catch(() => {
+                    const fallbackUrl = url.replace(/https?:\/\/[^/]+\/api/, 'http://localhost/api');
+                    fetch(fallbackUrl)
+                        .then(r => r.ok ? r.json() : Promise.reject(r))
+                        .then(data => {
+                            const raw = Array.isArray(data) ? data : [];
+                            const userBooks = raw.map(b => {
+                                const book = Object.assign({}, b);
+                                book.id = book.id ?? book.ID ?? book.book_id ?? book.bookId ?? null;
+                                book.user_id = book.user_id ?? book.userid ?? book.userId ?? book.user ?? null;
+                                book.title = book.title ?? book.name ?? '';
+                                book.author = book.author ?? book.writer ?? '';
+                                book.year = book.year ? Number(book.year) : 0;
+                                book.pages = book.pages ? Number(book.pages) : 0;
+                                book.rating = book.rating ?? book.mark ?? 0;
+                                book.finished = book.finished ? Boolean(Number(book.finished)) : false;
+                                book.read_status = book.read_status ?? book.readStatus ?? 0;
+                                return book;
+                            });
+                            setBooks ? setBooks(userBooks) : null;
+                        })
+                        .catch(() => {});
+                });
             setLibrary({ title: '', author: '', year: '', pages: '' });
             alert('Книгу додано');
         } catch (err) { alert('Помилка мережі'); }

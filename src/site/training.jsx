@@ -1,5 +1,5 @@
 import  { useContext, useState, useEffect, useMemo } from 'react';
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://juniper-fractus-dorethea.ngrok-free.dev/api';
+const API_BASE = import.meta.env.VITE_API_BASE;
 import { Link } from 'react-router-dom';
 import { PageState } from './pagestate.jsx';
 import { Line } from 'react-chartjs-2';
@@ -11,7 +11,16 @@ function Training() {
     const { currentUser, setCurrentUser } = useContext(PageState);
     const name = currentUser?.name || '';
     const firstLetter = name.trim().charAt(0).toUpperCase();
-    const uid = currentUser?.userid || currentUser?.id || currentUser?.user_id;
+    let uid = currentUser?.userid || currentUser?.id || currentUser?.user_id;
+    if (!uid) {
+        try {
+            const raw = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+            const saved = raw ? JSON.parse(raw) : null;
+            uid = uid || saved?.id || saved?.userid || saved?.user_id || null;
+        } catch (e) {
+            uid = uid || null;
+        }
+    }
     const { books, setBooks} = useContext(PageState);
     const [train, setTrain] = useState({bookname: ''});
     const [selectBook, setSelectBook] = useState([]);
@@ -60,9 +69,78 @@ function Training() {
                 return;
             }
             try {
-                const response = await fetch(`${API_BASE}/getBooks.php?user_id=${uid}&query=${encodeURIComponent(value)}`);
-                const data = await response.json();
-                setNeedbooks(data);
+                const url = `${API_BASE}/getBooks.php?user_id=${uid}&query=${encodeURIComponent(value)}`;
+                console.debug('getBooks fetch URL:', url);
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const txt = await response.text().catch(() => '');
+                    console.debug('getBooks non-OK response:', response.status, 'content-type:', response.headers.get('content-type'), txt);
+                    setNeedbooks([]);
+                    return;
+                }
+                const ct = (response.headers.get('content-type') || '').toLowerCase();
+                let data = null;
+                console.debug('getBooks response status:', response.status, 'content-type:', ct);
+                if (ct.includes('application/json')) {
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        const txt = await response.text().catch(() => '');
+                        console.debug('Failed to parse JSON from getBooks:', txt, 'headers:', Object.fromEntries(response.headers));
+                        setNeedbooks([]);
+                        return;
+                    }
+                } else {
+                    const txt = await response.text().catch(() => '');
+                    console.debug('getBooks returned non-json:', txt);
+                    // attempt to surface ngrok error header if present
+                    const ngrokErr = response.headers.get('x-ngrok-error') || response.headers.get('x-ngrok-status');
+                    if (ngrokErr) console.debug('ngrok header:', ngrokErr);
+
+                    // if our API_BASE seems to be an ngrok URL, try local fallback
+                    if (API_BASE.includes('ngrok')) {
+                        const LOCAL_BASE = 'http://localhost/api';
+                        const altUrl = `${LOCAL_BASE}/getBooks.php?user_id=${uid}&query=${encodeURIComponent(value)}`;
+                        console.debug('Retrying getBooks with local base:', altUrl);
+                        try {
+                            const altResp = await fetch(altUrl);
+                            if (altResp.ok) {
+                                const altCt = (altResp.headers.get('content-type') || '').toLowerCase();
+                                if (altCt.includes('application/json')) {
+                                    data = await altResp.json();
+                                    console.debug('getBooks fallback succeeded');
+                                } else {
+                                    const altTxt = await altResp.text().catch(() => '');
+                                    console.debug('fallback also non-json:', altTxt);
+                                }
+                            } else {
+                                console.debug('fallback response not ok', altResp.status);
+                            }
+                        } catch (e) {
+                            console.debug('fallback fetch error', e);
+                        }
+                    }
+                    if (!data) {
+                        setNeedbooks([]);
+                        return;
+                    }
+                }
+                const raw = Array.isArray(data) ? data : (Array.isArray(data?.books) ? data.books : []);
+                if ((!raw || raw.length === 0) && data && typeof data === 'object') console.debug('getBooks returned non-array:', data);
+                const normalized = raw.map(b => {
+                    const book = Object.assign({}, b);
+                    book.id = book.id ?? book.ID ?? book.book_id ?? book.bookId ?? null;
+                    book.user_id = book.user_id ?? book.userid ?? book.userId ?? book.user ?? null;
+                    book.title = book.title ?? book.name ?? '';
+                    book.author = book.author ?? book.writer ?? '';
+                    book.year = book.year ? Number(book.year) : 0;
+                    book.pages = book.pages ? Number(book.pages) : 0;
+                    book.rating = book.rating ?? book.mark ?? 0;
+                    book.finished = book.finished ? Boolean(Number(book.finished)) : false;
+                    book.read_status = book.read_status ?? book.readStatus ?? 0;
+                    return book;
+                });
+                setNeedbooks(normalized);
             } catch (error) {
                 console.error("Помилка при пошуку книг:", error);
             }
@@ -354,7 +432,7 @@ function Training() {
                                     </div>
                                 </div>
                                 <div>
-                                    <input onFocus={() => setFocused3(true)} onBlur={() => setFocused3(false)} placeholder='Обрати книги з бібліотеки' onChange={e => onChange(e.target.value, 'bookname')} style={{outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused3 ? '#fff' : '#F6F7FB', border: focused3 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: '25px 46px 0 0', width:  focused3 ? '658px' : '656px', height:  focused3 ? '44px' : '42px', boxShadow: focused3 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}}></input>
+                                    <input value={train.bookname} onFocus={() => setFocused3(true)} onBlur={() => setFocused3(false)} placeholder='Обрати книги з бібліотеки' onChange={e => onChange(e.target.value, 'bookname')} style={{outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused3 ? '#fff' : '#F6F7FB', border: focused3 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: '25px 46px 0 0', width:  focused3 ? '658px' : '656px', height:  focused3 ? '44px' : '42px', boxShadow: focused3 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
                                     <button onClick={inputData} style={{backgroundColor: "#F6F7FB", border: '1px solid #242A37', width: '171px', height: '42px', cursor: 'pointer'}}>Додати</button>
                                 </div>
                                     <div style={{backgroundColor: '#fff', width: '669px', borderRadius: '0 0 6px 6px', position: 'absolute', marginLeft: '1px'}}>
@@ -362,7 +440,7 @@ function Training() {
                                             <></>
                                         ) : (
                                                 needbooks.map(book => (
-                                                    <p key={book.id} onClick={() => {
+                                                    <p key={book.id} onMouseDown={() => {
                                                         const real = books.find(b => String(b.id) === String(book.id)) || book;
                                                         !selectBook.some(b => String(b.id) === String(real.id)) ? setSelectBook(prev => [...prev, real]) : null;
                                                         setTrain({ bookname: book.title });

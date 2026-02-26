@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from "react";
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://juniper-fractus-dorethea.ngrok-free.dev/api';
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 export const PageState = createContext();
 export function PageStateProvider({ children }) {

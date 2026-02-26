@@ -1,5 +1,5 @@
 import { React, useState, useContext } from 'react';
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://juniper-fractus-dorethea.ngrok-free.dev/api';
+const API_BASE = import.meta.env.VITE_API_BASE;
 import background_picture_desctop from './pictures/Registration_picture_for_desctop.jpg';
 import google_logo from './pictures/google_logo.png';
 import { Link } from 'react-router-dom';
@@ -15,22 +15,23 @@ function Registration() {
         const { name, value} = e.target;
         setRegistration(prev => ({...prev, [name]: value}));
     };
-    
     const handleGoogleRegisterSuccess = (tokenResponse) => {
         try {
-            const id_token = tokenResponse?.credential || tokenResponse?.id_token;
-            
-            if (!id_token) {
+            const id_token = tokenResponse?.credential || tokenResponse?.id_token || null;
+            const access_token = tokenResponse?.access_token || null;
+            if (!id_token && !access_token) {
                 alert('Помилка: не вдалося отримати токен від Google');
                 return;
             }
-            
+            const body = { action: 'register' };
+            if (id_token) body.id_token = id_token;
+            if (access_token) body.access_token = access_token;
             fetch(`${API_BASE}/googleAuth.php`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id_token: id_token })
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(body)
             })
             .then(res => res.json())
             .then(data => {
@@ -48,8 +49,7 @@ function Registration() {
         } catch (err) {
             alert("Помилка при реєстрації через Google");
         }
-    };
-    
+    }; 
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     let googleReg = () => alert('Google OAuth не налаштовано');
     if (googleClientId) {

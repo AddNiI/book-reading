@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-const API_BASE = import.meta.env.VITE_API_BASE || 'https://juniper-fractus-dorethea.ngrok-free.dev/api';
+const API_BASE = import.meta.env.VITE_API_BASE;
 import background_picture_desctop from './pictures/Registration_picture_for_desctop.jpg';
 import google_logo from './pictures/google_logo.png';
 import { Link } from 'react-router-dom';
@@ -12,24 +12,25 @@ function Login() {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    
     const handleGoogleLoginSuccess = (credentialResponse) => {
         try {
             const id_token = credentialResponse?.credential 
                 || credentialResponse?.id_token
-                || credentialResponse?.access_token;
-                
-            if (!id_token) {
+                || null;
+            const access_token = credentialResponse?.access_token || null;
+            if (!id_token && !access_token) {
                 alert('Помилка: не вдалося отримати токен від Google');
                 return;
             }
-            
+            const body = { action: 'login' };
+            if (id_token) body.id_token = id_token;
+            if (access_token) body.access_token = access_token;
             fetch(`${API_BASE}/googleAuth.php`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ id_token: id_token })
+                body: JSON.stringify(body)
             })
             .then(res => res.json())
             .then(data => {
@@ -47,8 +48,7 @@ function Login() {
         } catch (err) {
             alert('Помилка при вході через Google');
         }
-    };
-    
+    };    
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     let googleLogin = () => alert('Google OAuth не налаштовано');
     if (googleClientId) {
@@ -66,9 +66,7 @@ function Login() {
       },
       body: JSON.stringify({ email, password }),
     });
-
     const data = await res.json();
-
     if (!res.ok) {
       if (data.error === "USER_NOT_FOUND") {
         alert("Користувача з такою поштою не існує!");
@@ -80,7 +78,6 @@ function Login() {
       }
       throw new Error("Login failed");
     }
-
     loginUser(data);
     localStorage.setItem("currentUser", JSON.stringify(data));
     navigate("/library");
@@ -89,7 +86,6 @@ function Login() {
     alert("Помилка підключення до сервера");
   }
 };
-
     return (
         <div>
             <header>
