@@ -6,6 +6,8 @@ import Login from './site/login.jsx';
 import Library from './site/library.jsx'
 import Registration from './site/register.jsx';
 import Training from './site/training.jsx';
+import PrivacyPolicy from './site/docunents/PrivacyPolicy.jsx';
+import TermsOfService from './site/docunents/TermsOfService.jsx';
 import { PageStateProvider } from "./site/pagestate.jsx";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -21,6 +23,8 @@ const root = ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route element={<Logined />}>
           <Route path="/library" element={<Library />} />
           <Route path="/training" element={<Training />} />

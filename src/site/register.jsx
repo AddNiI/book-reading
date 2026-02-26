@@ -108,7 +108,7 @@ function Registration() {
             <main style={{display: 'flex'}}>
                 <div style={{width: '565px', backgroundImage: `url(${background_picture_desctop})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', height: 'calc(100vh - 60px)', aspectRatio: '113 / 158', width: 'auto' }}>
                     <div style={{ backgroundColor: '#091E3FCC', width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <div id='registration-form' style={{ backgroundColor: 'white', height: '610px', width: '360px', paddingLeft: '40px'}}>
+                        <div id='registration-form' style={{ backgroundColor: 'white', height: '630px', width: '360px', paddingLeft: '40px'}}>
                             <button 
                                 onClick={() => googleReg()} 
                                 style={{cursor: 'pointer', fontFamily: '"Roboto", serif', fontWeight: 700, color: '#707375', border: '0', backgroundColor: '#F5F7FA', padding: '11px 49px 11px 14px', display: 'flex', margin: '39px 0 0 85px', boxShadow: '0 2px 2px #091E3F26'}}
@@ -136,7 +136,15 @@ function Registration() {
                             <Link to="/login" style={{textDecoration: 'none'}}>
                                 <h5 style={{fontFamily: '"Montserrat", serif', fontWeight: 500, margin: '19px 0 0 92px', color: '#898F9F'}}>Вже з нами? <span style={{textDecoration: 'underline', color: '#FF6B08'}}>Увiйти</span></h5>
                             </Link>
+                            <div style={{display: 'flex'}}>
+                                <Link to="/terms-of-service" style={{ textDecoration: 'none'}}>
+                                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '13px',color: '#FF6B08', margin: '15px 0'}}>Умови використання</p>
+                                </Link>
+                                <Link to="/privacy-policy" style={{ textDecoration: 'none'}}>
+                                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '13px', color: '#FF6B08', margin: '15px 0 0 5px'}}>Політика конфіденційності</p>
+                                </Link>
                             </div>
+                        </div>
                     </div>
                 </div>
                 <div style={{flex: '1',display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 2px 2px #091E3F1A', flexDirection: 'column'}}>
