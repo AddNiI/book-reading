@@ -72,10 +72,10 @@ function TermsOfService() {
                     Останнє оновлення: 26.02.2026
                 </p>
                 <Link to="/login">
-                    <button style={{margin: '20px 0', color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: '11px 22px', cursor: 'pointer'}}>Перейти головну сторiнку</button>
+                    <button style={{backgroundColor: "#fff", border: '1px solid #242A37', width: '127px', height: '40px', cursor: 'pointer'}}>Увiйти</button>                                
                 </Link>
                 <Link to="/registration">
-                    <button style={{margin: '20px 0 0 249px', color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: '11px 22px', cursor: 'pointer'}}>Перейти до реєстрації</button>
+                    <button style={{margin: '20px 0 20px 445px', color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: '11px 23px', cursor: 'pointer'}}>Реєстрація</button>
                 </Link>
             </div>
         </>

@@ -40,26 +40,42 @@ function Training() {
     const training = currentUser?.training
     const [yearCountdown, setYearCountdown] = useState({days: 0, hours: 0, minutes: 0, seconds: 0});
     const [goalCountdown, setGoalCountdown] = useState({days: 0, hours: 0, minutes: 0, seconds: 0});
-    const { wantread, reading, finishing, currentUserPages: userPages } = useMemo(() => {
+    const [showFinishModal, setShowFinishModal] = useState(false);
+    const [pendingBookId, setPendingBookId] = useState(null);
+    function FinishTrainingModal({ onCancel, onConfirm }) {
+        return (
+            <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                <div onClick={e => e.stopPropagation()} style={{ background: '#fff', width: '390px', height: '186px' }}>
+                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, margin: '47px 41px 25px', textAlign: 'center' }}>Ви прочитали останню книгу?<br /> Чи хочете завершити тренування?</p>
+                    <button onClick={onCancel} style={{backgroundColor: "#fff", border: '1px solid #242A37', width: '130px', height: '40px', margin: '0 31px 0 50px', cursor: 'pointer'}}>Вiдмiна</button>
+                    <button onClick={onConfirm} style={{color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: '11px 24px', cursor: 'pointer'}}>Завершити</button>
+                </div>
+            </div>
+        );
+    }
+    const { needfinish, wantread, reading, finishing, currentUserPages: userPages } = useMemo(() => {
     const wantread = [];
     const reading = [];
     const finishing = [];
     const currentUserPages = [];  
-    (pages || []).forEach(page => {
+    const needfinish = [];
+    pages.forEach(page => {
         const pid = page.user_id;
         pid == uid ? currentUserPages.push(page) : null;
     });
-    (books || []).forEach(book => {
+    books.forEach(book => {
         const bid = book.user_id;
         String(bid) === String(uid) 
             ? (book.finished)
-                ? finishing.push(book)
-                : (Number(book.read_status)  == 1)
+                ? book.read_status == 1
+                    ? (needfinish.push(book), finishing.push(book))
+                    : finishing.push(book)
+                : book.read_status == 1
                     ? reading.push(book)
                     : wantread.push(book)
             : null
     });
-    return { wantread, reading, finishing, currentUserPages };
+    return { needfinish, wantread, reading, finishing, currentUserPages };
     }, [books, pages, uid]);
         const onChange = async (value, name) => {
         if (name === 'bookname') {
@@ -71,7 +87,11 @@ function Training() {
             try {
                 const url = `${API_BASE}/getBooks.php?user_id=${uid}&query=${encodeURIComponent(value)}`;
                 console.debug('getBooks fetch URL:', url);
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    headers: {
+                        "ngrok-skip-browser-warning": "true"
+                    }
+                });
                 if (!response.ok) {
                     const txt = await response.text().catch(() => '');
                     console.debug('getBooks non-OK response:', response.status, 'content-type:', response.headers.get('content-type'), txt);
@@ -93,17 +113,18 @@ function Training() {
                 } else {
                     const txt = await response.text().catch(() => '');
                     console.debug('getBooks returned non-json:', txt);
-                    // attempt to surface ngrok error header if present
                     const ngrokErr = response.headers.get('x-ngrok-error') || response.headers.get('x-ngrok-status');
                     if (ngrokErr) console.debug('ngrok header:', ngrokErr);
-
-                    // if our API_BASE seems to be an ngrok URL, try local fallback
                     if (API_BASE.includes('ngrok')) {
                         const LOCAL_BASE = 'http://localhost/api';
                         const altUrl = `${LOCAL_BASE}/getBooks.php?user_id=${uid}&query=${encodeURIComponent(value)}`;
                         console.debug('Retrying getBooks with local base:', altUrl);
-                        try {
-                            const altResp = await fetch(altUrl);
+                        try { 
+                            const altResp = await fetch(altUrl, {
+                                headers: {
+                                    "ngrok-skip-browser-warning": "true"
+                                }
+                            });
                             if (altResp.ok) {
                                 const altCt = (altResp.headers.get('content-type') || '').toLowerCase();
                                 if (altCt.includes('application/json')) {
@@ -166,12 +187,22 @@ function Training() {
         return data3 ? Math.ceil(totalPages / parseInt(data3)) : 0;
     }, [totalPages, data3]);
     const chartData = useMemo(() => {
-        const dates = currentUserPages.map(page => page.date);
-        const pagesRead = currentUserPages.map(page => parseInt(page.pages_count || page.pages || 0));
-        const normLine = dates.map(() => dailyNorm);
-        
+        const grouped = {};
+        currentUserPages.forEach(page => {
+            const date = page.date;
+            const pages = parseInt(page.pages_count || page.pages || 0);
+            if (!grouped[date]) {
+                grouped[date] = 0;
+            }
+            grouped[date] += pages;
+        });
+        const sortedDates = Object.keys(grouped).sort(
+            (a, b) => new Date(a) - new Date(b)
+        );
+        const pagesRead = sortedDates.map(date => grouped[date]);
+        const normLine = sortedDates.map(() => dailyNorm);
         return {
-            labels: dates,
+            labels: sortedDates,
             datasets: [
                 {
                     label: 'Прочитано сторінок',
@@ -245,17 +276,15 @@ function Training() {
     const currentUid = currentUser?.userid || currentUser?.id;
     if (!date1 || !date2 || selectBook.length === 0) return alert('Не вказано дати або не вибрано книги');
     if (new Date(date2) < new Date(date1)) return alert('Дата завершення не може бути раніше початку');
-
     const readDays = Math.max(Math.ceil((new Date(date2) - new Date(date1)) / (1000 * 60 * 60 * 24)), 0);
-
     fetch(`${API_BASE}/startTraining.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "true" },
         body: JSON.stringify({
             user_id: currentUid,
             finish_date: new Date(date2).toISOString().split('T')[0],
-            books: selectBook.map(b => b.id),
-            read_days: readDays
+            bookIds: selectBook.map(b => b.id),
+            readDays: readDays
         })
     })
     .then(res => res.ok ? res.json() : Promise.reject('Ошибка базы'))
@@ -284,7 +313,7 @@ function Training() {
     try {
         const res = await fetch(`${API_BASE}/addPage.php`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "true"  },
             body: JSON.stringify({ book_id: activeBook.id, user_id: uid, pages_count: pCount, date: data4 })
         });
         const data = await res.json();
@@ -301,29 +330,37 @@ function Training() {
     const onChangeDate4  = (value) => {
         setData4(value)
     }
-    
-    const finishBook = async (id) => {
-        try {
-            const res = await fetch(`${API_BASE}/updateBook.php`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ book_id: id, finished: 1 })
-            });
-            if (!res.ok) {
-                const txt = await res.text();
-                alert('Помилка сервера: ' + txt);
-                return;
+    const finishBook = async (id) => { 
+        try { 
+            const res = await fetch(`${API_BASE}/updateBook.php`, { 
+                method: 'POST', headers: { 
+                    'Content-Type': 'application/json', 
+                    "ngrok-skip-browser-warning": "true" 
+                }, 
+                body: JSON.stringify({ book_id: id, finished: 1 }) 
+            }); 
+            if (!res.ok) { 
+                const txt = await res.text(); 
+                alert('Помилка сервера: ' + txt); return; 
+            } 
+            setBooks(prev => prev.map(book => book.id === id ? {...book, finished: true} : book)); 
+            if (reading.length <= 1) {
+                wantFinishTraining(id);
             }
-            setBooks(prev => prev.map(book => book.id === id ? {...book, finished: true} : book));
-        } catch (err) {
-            alert('Помилка мережі при помітці книги як прочитаної');
-        }
+        } 
+        catch (err) { 
+            alert('Помилка мережі при помітці книги як прочитаної'); 
+        } 
     }
+    const wantFinishTraining = (id) => {
+        setPendingBookId(id);
+        setShowFinishModal(true);
+    };
     const unfinishBook = async (id) => {
         try {
             const res = await fetch(`${API_BASE}/updateBook.php`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "true"  },
                 body: JSON.stringify({ book_id: id, finished: 0 })
             });
             if (!res.ok) {
@@ -342,7 +379,7 @@ function Training() {
     function Modal({onClose}) {
         return (
             <div onClick={onClose} style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center'}} >
-                <div onClick={e => e.stopPropagation()} style={{background:'#fff', width: '390px', height: '206px', borderRadius: '6px '}}>
+                <div onClick={e => e.stopPropagation()} style={{background:'#fff', width: '390px', height: '186px'}}>
                     <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, margin: '47px 51px 25px', textAlign: 'center'}}>Якщо Ви вийдете з програми<br />незбережені дані будуть втрачені</p>
                     <button onClick={onClose} style={{backgroundColor: "#fff", border: '1px solid #242A37', width: '130px', height: '40px', margin: '0 30px 0 50px', cursor: 'pointer'}}>Вiдмiна</button>
                     <Link to="/login">
@@ -352,11 +389,53 @@ function Training() {
             </div>
         );
     }
+    const finishTraining = async () => {
+        try {
+            await fetch(`${API_BASE}/finishTraining.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "ngrok-skip-browser-warning": "true"
+                },
+                body: JSON.stringify({ user_id: uid })
+            });
+            setCurrentUser(prev => ({
+                ...prev,
+                training: false,
+                finishDate: null,
+                readDays: null
+            }));
+            setPages([]);
+        } catch (err) {
+            alert("Помилка");
+        }
+    };
     const chart = []
     return(
         <div>
+            {showFinishModal && (
+                <FinishTrainingModal
+                    onConfirm={async () => {
+                        await finishTraining();
+                        setShowFinishModal(false);
+                        setPendingBookId(null);
+                    }}
+                    onCancel={async () => {
+                        await unfinishBook(pendingBookId);
+                        setShowFinishModal(false);
+                        setPendingBookId(null);
+                    }}
+                />
+            )}
+            {isModalOpen && (
+                <Modal
+                    onClose={() => { setIsModalOpen(false) }}
+                />
+            )}
             <header style={{padding: '13.5px 15px', gridTemplateColumns: '1fr auto 1fr', boxShadow: '0 2px 2px #091E3F1A', display: 'grid', alignItems: 'center'}}>
-                <p style={{fontFamily: '"Abril Fatface", serif', fontWeight: 400, margin: '0', justifyContent: 'start'}}>BR</p>
+                <Link to="/library" style={{textDecoration: 'none', color: '#000'}}>
+                    <p style={{fontFamily: '"Abril Fatface", serif', fontWeight: 400, margin: '0', justifyContent: 'start'}}>BR</p>
+                </Link>
                 <div style={{justifyContent: 'center', display: 'flex', alignItems: 'center'}}>
                     <div style={{width: 33,height: 33,borderRadius: '50%',background: '#F5F7FA', margin: '0 12px 0 0',display: 'inline-flex',alignItems: 'center',justifyContent: 'center'}}><p style={{margin:'0', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37'}}>{firstLetter}</p></div>
                         <p style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '0'}}>{name}</p>
@@ -384,11 +463,6 @@ function Training() {
                 </div>
             </header>
             <main style={{backgroundColor: '#F6F7FB', display: 'flex', padding:'0 0 0 calc(50% - 601px)'}}>
-                {isModalOpen && (
-                    <Modal
-                        onClose={() => { setIsModalOpen(false) }}
-                    />
-                )}
                 <div>
                     {training ? (
                     <div style={{display: 'flex', marginLeft: 'calc(50% - 324px)'}}>
@@ -465,7 +539,7 @@ function Training() {
                         <hr style={{color: '#898F9F', margin: '0'}} />
                         {training ? (
                             <>
-                                {finishing.map(book => (
+                                {needfinish.map(book => (
                                     <div key={book.id} style={{display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, width: '886px'}}>
                                     <input type='checkbox' onChange={() => unfinishBook(book.id)} checked={true} style={{cursor: 'pointer', width: '15px', height: '15px', border: '1px solid #FF6B08', borderRadius: '0', accentColor: '#FF6B08', margin: '24px 24px 0 0'}}  />
                                         <p style={{margin: '21px 10px 0 0', width: '309px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.title}</p>
