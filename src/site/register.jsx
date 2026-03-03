@@ -1,4 +1,4 @@
-import { React, useState, useContext, useEffect } from 'react';
+import { useState, useContext, useEffect } from 'react';
 const API_BASE = import.meta.env.VITE_API_BASE;
 import background_picture_desctop from './pictures/Registration_picture_for_desctop.jpg';
 import background_picture_pad from './pictures/Registration_picture_for_pad.jpg';
@@ -14,6 +14,15 @@ function Registration() {
     const { loginUser } = useContext(PageState);
     const [register, setRegistration] = useState({ name: '', email: '', password: '', passwordRepeat: '' });
     const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('currentUser');
+            const saved = raw ? JSON.parse(raw) : null;
+            saved ? navigate('/library') : null;
+        } catch (e) {
+            null
+        }
+    })
     useEffect(() => {
         const changeWidth = () => setWindowWidth(window.innerWidth)
         window.addEventListener('resize', changeWidth);
@@ -111,7 +120,7 @@ function Registration() {
 };
 
     return (
-        <div>
+        <>
             <header>
                 <p style={{fontFamily: '"Abril Fatface", serif', fontWeight: 400, padding: '19px 15px', margin: '0', width: '535px'}}>BR</p>
             </header>
@@ -176,7 +185,7 @@ function Registration() {
                     )
                 }
             </main>
-        </div>
+        </>
     );
 };
 

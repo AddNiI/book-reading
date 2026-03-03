@@ -23,7 +23,17 @@ function Training() {
     }
     const { books, setBooks} = useContext(PageState);
     const [train, setTrain] = useState({bookname: ''});
-    const [selectBook, setSelectBook] = useState([]);
+    const [selectBook, setSelectBook] = useState(() => {
+        try {
+            const saved = sessionStorage.getItem('selectBook');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+    useEffect(() => {
+        sessionStorage.setItem('selectBook', JSON.stringify(selectBook));
+    }, [selectBook]);
     const [needbooks, setNeedbooks] = useState([]);
     const [date1, setDate1] = useState('');
     const [date2, setDate2] = useState('');
@@ -48,15 +58,15 @@ function Training() {
         window.addEventListener('resize', changeWidth);
         return () => window.removeEventListener('resize', changeWidth)
     })
-    const isPad = windowWidth < 1280 && windowWidth > 768;
+    const isPad = windowWidth < 1280 /* && windowWidth >= 768*/;
     const isPhone = windowWidth < 768;
     function FinishTrainingModal({ onCancel, onConfirm }) {
         return (
             <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                <div onClick={e => e.stopPropagation()} style={{ background: '#fff', width: '390px', height: '186px' }}>
-                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, margin: '47px 41px 25px', textAlign: 'center' }}>Ви прочитали останню книгу?<br /> Чи хочете завершити тренування?</p>
-                    <button onClick={onCancel} style={{backgroundColor: "#fff", border: '1px solid #242A37', width: '130px', height: '40px', margin: '0 31px 0 50px', cursor: 'pointer'}}>Вiдмiна</button>
-                    <button onClick={onConfirm} style={{color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: '11px 24px', cursor: 'pointer'}}>Завершити</button>
+                <div onClick={e => e.stopPropagation()} style={{ background: '#fff', width: isPhone ? '270px' : '390px', height: '186px' }}>
+                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, margin: isPhone ? '27px 11px 15px' : '47px 41px 25px', textAlign: 'center' }}>Ви прочитали останню книгу?<br /> Чи хочете завершити тренування?</p>
+                    <button onClick={onCancel} style={{backgroundColor: "#fff", border: '1px solid #242A37', width: isPhone ? '98px' : '130px', height: '40px', margin: isPhone? '0 15px 0 29px' : '0 31px 0 50px', cursor: 'pointer'}}>Вiдмiна</button>
+                    <button onClick={onConfirm} style={{color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: isPhone ? '11px 7px' : '11px 24px', cursor: 'pointer'}}>Завершити</button>
                 </div>
             </div>
         );
@@ -85,7 +95,7 @@ function Training() {
     });
     return { needfinish, wantread, reading, finishing, currentUserPages };
     }, [books, pages, uid]);
-        const onChange = async (value, name) => {
+    const onChange = async (value, name) => {
         if (name === 'bookname') {
             setTrain(prev => ({ ...prev, bookname: value }));
             if (!value.trim() || !uid) {
@@ -155,7 +165,6 @@ function Training() {
                     }
                 }
                 const raw = Array.isArray(data) ? data : (Array.isArray(data?.books) ? data.books : []);
-                if ((!raw || raw.length === 0) && data && typeof data === 'object') console.debug('getBooks returned non-array:', data);
                 const normalized = raw.map(b => {
                     const book = Object.assign({}, b);
                     book.id = book.id ?? book.ID ?? book.book_id ?? book.bookId ?? null;
@@ -281,37 +290,39 @@ function Training() {
         setSelectBook(prev => prev.filter(book => book.id !== id));
     };
     const startTraining = () => {
-    const currentUid = currentUser?.userid || currentUser?.id;
-    if (!date1 || !date2 || selectBook.length === 0) return alert('Не вказано дати або не вибрано книги');
-    if (new Date(date2) < new Date(date1)) return alert('Дата завершення не може бути раніше початку');
-    const readDays = Math.max(Math.ceil((new Date(date2) - new Date(date1)) / (1000 * 60 * 60 * 24)), 0);
-    fetch(`${API_BASE}/startTraining.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "true" },
-        body: JSON.stringify({
-            user_id: currentUid,
-            finish_date: new Date(date2).toISOString().split('T')[0],
-            bookIds: selectBook.map(b => b.id),
-            readDays: readDays
+        const currentUid = currentUser?.userid || currentUser?.id;
+        if (!date1 || !date2 || selectBook.length === 0) return alert('Не вказано дати або не вибрано книги');
+        if (new Date(date2) < new Date(date1)) return alert('Дата завершення не може бути раніше початку');
+        const readDays = Math.max(Math.ceil((new Date(date2) - new Date(date1)) / (1000 * 60 * 60 * 24)), 0);
+        fetch(`${API_BASE}/startTraining.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', "ngrok-skip-browser-warning": "true" },
+            body: JSON.stringify({
+                user_id: currentUid,
+                finish_date: new Date(date2).toISOString().split('T')[0],
+                bookIds: selectBook.map(b => b.id),
+                readDays: readDays
+            })
         })
-    })
-    .then(res => res.ok ? res.json() : Promise.reject('Ошибка базы'))
+        .then(res => res.ok ? res.json() : Promise.reject('Ошибка базы'))
         .then(() => {
-        setCurrentUser(prev => ({
-            ...prev,
-            training: true,
-            finishDate: new Date(date2).toISOString().split('T')[0],
-            readDays: readDays
-        }));
-        typeof setBooks === 'function' ? setBooks(prevBooks => prevBooks.map(book => 
-                selectBook.some(sb => sb.id === book.id) 
-                    ? { ...book, read_status: 1 }
-                    : book
-            )) : null;
-        setIsModalOpen ? setIsModalOpen(false) : null;
-    })
-    .catch(err => alert('Помилка при запуску: ' + err));
-};
+            setCurrentUser(prev => ({
+                ...prev,
+                training: true,
+                finishDate: new Date(date2).toISOString().split('T')[0],
+                readDays: readDays
+            }));
+            typeof setBooks === 'function' ? setBooks(prevBooks => prevBooks.map(book => 
+                    selectBook.some(sb => sb.id === book.id) 
+                        ? { ...book, read_status: 1 }
+                        : book
+                )) : null;
+            setSelectBook([]);
+            sessionStorage.removeItem('selectBook');
+            setIsModalOpen ? setIsModalOpen(false) : null;
+        })
+        .catch(err => alert('Помилка при запуску: ' + err));
+    };
     const addDate = async () => {
     const pCount = parseInt(countPages);
     const activeBook = reading.find(b => (b.title || b.bookname) === train.bookname) || reading[0];
@@ -387,11 +398,11 @@ function Training() {
     function Modal({onClose}) {
         return (
             <div onClick={onClose} style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center'}} >
-                <div onClick={e => e.stopPropagation()} style={{background:'#fff', width: '390px', height: '186px'}}>
-                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, margin: '47px 51px 25px', textAlign: 'center'}}>Якщо Ви вийдете з програми<br />незбережені дані будуть втрачені</p>
-                    <button onClick={onClose} style={{backgroundColor: "#fff", border: '1px solid #242A37', width: '130px', height: '40px', margin: '0 30px 0 50px', cursor: 'pointer'}}>Вiдмiна</button>
+                <div onClick={e => e.stopPropagation()} style={{background:'#fff', width: isPhone ? '270px' : '390px', height: isPhone ? '223px' : '186px'}}>
+                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, margin: isPhone ? '47px 16px 20px 17px' : '47px 51px 25px', textAlign: 'center'}}>Якщо Ви вийдете з програми<br />незбережені дані будуть втрачені</p>
+                    <button onClick={onClose} style={{backgroundColor: "#fff", border: '1px solid #242A37', width: isPhone ? '98px' : '130px', height: '40px', margin: isPhone ? '0 15px 0 30px' : '0 30px 0 50px', cursor: 'pointer'}}>Вiдмiна</button>
                     <Link to="/login">
-                        <button onClick={()=>{localStorage.removeItem("currentUser"), setCurrentUser(null)}} style={{color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: '11px 42px', cursor: 'pointer'}}>Вийти</button>
+                        <button onClick={()=>{localStorage.removeItem("currentUser"), setCurrentUser(null)}} style={{color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: isPhone ? '11px 25px' : '11px 42px', cursor: 'pointer'}}>Вийти</button>
                     </Link>
                 </div>
             </div>
@@ -420,7 +431,7 @@ function Training() {
     };
     const chart = []
     return(
-        <div>
+        <>
             {showFinishModal && (
                 <FinishTrainingModal
                     onConfirm={async () => {
@@ -440,11 +451,15 @@ function Training() {
                     onClose={() => { setIsModalOpen(false) }}
                 />
             )}
-            <header style={{padding: '12px 15px', gridTemplateColumns: '1fr auto 1fr', boxShadow: '0 2px 2px #091E3F1A', backgroundColor: '#FFF', display: 'grid', alignItems: 'center', position: 'fixed', width: '100%', zIndex: 100}}>
-                <p style={{fontFamily: '"Abril Fatface", serif', fontWeight: 400, margin: '0', justifyContent: 'start'}}>BR</p>
+            <header style={{padding: '12px 15px', gridTemplateColumns: '1fr auto 1fr', boxShadow: '0 2px 2px #091E3F1A', backgroundColor: '#FFF', display: 'grid', alignItems: 'center', position: 'fixed', width: 'calc(100vw - 30px)', zIndex: 100}}>
+                <Link to="/library" style={{textDecoration: 'none', color: '#000'}}><p style={{fontFamily: '"Abril Fatface", serif', fontWeight: 400, margin: '0', justifyContent: 'start'}}>BR</p></Link>
                 <div style={{justifyContent: 'center', display: 'flex', alignItems: 'center'}}>
-                    <div style={{width: 33,height: 33,borderRadius: '50%',background: '#F5F7FA', margin: '0 12px 0 0',display: 'inline-flex',alignItems: 'center',justifyContent: 'center'}}><p style={{margin:'0', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37'}}>{firstLetter}</p></div>
-                    <p style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '0'}}>{name}</p>
+                    {isPhone ? (<></>) : (
+                        <>
+                            <div style={{width: 33,height: 33,borderRadius: '50%',background: '#F5F7FA', margin: '0 12px 0 0',display: 'inline-flex',alignItems: 'center',justifyContent: 'center'}}><p style={{margin:'0', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37'}}>{firstLetter}</p></div>
+                            <p style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '0'}}>{name}</p>
+                        </>
+                    )}
                 </div>
                 <div style={{justifyContent: 'end', display: 'flex', height: '36px'}}>
                     <Link to="/training">
@@ -465,14 +480,17 @@ function Training() {
                     <svg width="2" height="33" viewBox="0 0 1 33" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <line x1="0.5" y1="-2.18557e-08" x2="0.500001" y2="33" stroke="#E0E5EB"/>
                     </svg>
-                    <p onClick={() => { setIsModalOpen(true); }} style={{cursor: 'pointer', fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '7px 43px 0 14px', textDecoration: 'underline'}}>Вихiд</p>
+                    {!isPhone ? (<></>) : (
+                        <div style={{width: 33,height: 33,borderRadius: '50%',background: '#F5F7FA', margin: '0 0 0 14px',display: 'inline-flex',alignItems: 'center',justifyContent: 'center'}}><p style={{margin:'0', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37'}}>{firstLetter}</p></div>
+                    )}
+                    <p onClick={()=>{setIsModalOpen(true)}} style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '7px 13px 0 14px', textDecoration: 'underline'}}>Вихiд</p>
                 </div>
             </header>
-            <main style={{backgroundColor: '#F6F7FB', minHeight: '100vh', height: '100%', display: isPad? 'block' : 'flex', padding:isPad ? '60px 45px calc(100% - 1219px) 45px' : '60px 0 0 calc(50% - 601px)'}}>
+            <main style={{backgroundColor: '#F6F7FB', minHeight: '100vh', height: '100%', display: isPad? 'block' : 'flex', padding: isPhone ? '60px 25px 33px' : (isPad ? '60px 45px 56px 45px' : '60px 0 0 calc(50% - 601px)')}}>
                 <div style={{paddingTop: '30px'}}>
                     {training ? (
-                    <div style={{display: 'flex', marginLeft: 'calc(50% - 324px)'}}>
-                        <div style={{marginRight: '68px', fontFamily: '"Montserrat", serif'}}>
+                    <div style={{display: isPhone ? 'block' : 'flex', marginLeft: isPhone ? 'calc(50% - 145px)' : 'calc(50% - 324px)'}}>
+                        <div style={{marginRight: isPhone ? '0' : '68px', fontFamily: '"Montserrat", serif'}}>
                             <p style={{fontWeight: 500, fontSize: '14px', margin: '0 0 8px 25px', color: '#898F9F'}}>До закінчення року залишилось</p>
                             <div style={{display: 'flex', backgroundColor: '#fff', width: '290px', boxShadow: '4px 4px 4px #242A3726'}}>
                                 <p style={{fontWeight: 700, fontSize: '24px', margin: '10px 0 10px 20px', width: '63px', textAlign: 'center'}}>{String(yearCountdown.days).padStart(2, '0')}</p>
@@ -485,7 +503,7 @@ function Training() {
                             </div>
                         </div>
                         <div style={{fontFamily: '"Montserrat", serif'}}>
-                            <p style={{fontWeight: 500, fontSize: '14px', margin: '0 0 8px 22px', color: '#898F9F'}}>До досягнення мети залишилось</p>
+                            <p style={{fontWeight: 500, fontSize: '14px', margin: isPhone ? '28px 0 8px 22px' : '0 0 8px 22px', color: '#898F9F'}}>До досягнення мети залишилось</p>
                             <div style={{display: 'flex', backgroundColor: '#fff', width: '290px', boxShadow: '4px 4px 4px #242A3726'}}>
                                 <p style={{fontWeight: 700, fontSize: '24px', margin: '10px 0 10px 20px', width: '63px', textAlign: 'center'}}>{String(goalCountdown.days).padStart(2, '0')}</p>
                                 <p style={{fontWeight: 700, fontSize: '24px', margin: '10px 0', width: '8px', textAlign: 'center'}}>:</p>
@@ -498,96 +516,128 @@ function Training() {
                         </div>
                     </div>
                     ) : (<></>)}
-                    {isPad ? (
-                        <div style={{backgroundColor: '#fff', display: 'flex', boxShadow: '2px 2px 2px #091E3F1A', marginBottom: '40px', marginTop: training ? '30px' : '0'}}>
-                            <p style={{fontFamily: '"Montserrat", serif', fontWeight: 600, fontSize: '20px', color: '#fff', backgroundColor: '#B1B5C2', margin: training ? '23px calc(100vw - 749px) 22px 30px' : '23px calc(100vw - 690px) 22px 45px', padding: '18px 28px'}}>Моя мета прочитати</p>
-                            <div>
-                                <p style={{fontFamily: '"Open Sans", serif', textAlign: 'center', fontSize: '45px', color: '#091E3F', width: '100px', fontWeight: 700, paddingTop: '1px', height: '59px', margin: training ? '20px 12px 4px 0' : '20px 35px 4px 0', backgroundColor: '#F5F7FA', boxShadow: '4px 4px 4px #242A3726'}}>{training ? (reading.length + finishing.length) : selectBook.length}</p>
-                                <p style={{fontSize:'12px',color: '#898F9F', margin: training ? "0 12px 8px 0" : '0 35px 8px 0', textAlign: 'center', width: '100px'}}>Кiлькiсть книжок</p>
-                            </div>
-                            <div>
-                                <p style={{fontFamily: '"Open Sans", serif', textAlign: 'center', fontWeight: 700, fontSize: '45px', color: '#091E3F', width: '100px', paddingTop: '1px', height: '59px', margin: training ? '20px 12px 4px 0' : '20px 35px 4px 0', backgroundColor: '#F5F7FA', boxShadow: '4px 4px 4px #242A3726'}}>{data3}</p>
-                                <p style={{fontSize:'12px',color: '#898F9F', margin: training ? "0 12px 8px 0" : '0 35px 8px 0', textAlign: 'center', width: '100px'}}>Кількість днів</p>
-                            </div>
-                            {training ? (
+                    {isPad || isPhone ? (
+                        <div style={{backgroundColor: '#fff', display: isPhone ? 'block' : 'flex', boxShadow: '2px 2px 2px #091E3F1A', marginLeft: isPhone ? 'calc(50vw - 160px)' : '0', marginBottom: '40px', marginTop: training ? '30px' : '0', width: isPhone ? '270px' : ''}}>
+                            <p style={{fontFamily: '"Montserrat", serif', width: isPhone ? '220px' : '', fontWeight: 600, fontSize: '20px', color: '#fff', backgroundColor: '#B1B5C2', margin: isPhone ? '0' : (training ? '23px calc(100vw - 749px) 22px 30px' : '23px calc(100vw - 690px) 22px 45px'), padding: isPhone ? '18px 25px' : '18px 28px'}}>Моя мета прочитати</p>
+                            <div style={{display: 'flex'}}>
                                 <div>
-                                    <p style={{fontFamily: '"Open Sans", serif', textAlign: 'center', fontWeight: 700, fontSize: '45px', color: '#FF6B08', width: '100px', paddingTop: '1px', height: '59px', margin: '20px 0 4px 0', backgroundColor: '#F5F7FA', boxShadow: '4px 4px 4px #242A3726'}}>{reading.length}</p>
-                                    <p style={{fontSize:'12px',color: '#898F9F', textAlign: 'center', margin: "0 0 8px 0"}}>Залишилось книжок</p>
+                                    <p style={{fontFamily: '"Open Sans", serif', textAlign: 'center', fontSize: '45px', color: '#091E3F', width: isPhone ? (training ? '63px' : '100px') : '100px', fontWeight: 700, paddingTop: isPhone ? (training ? '1px' : '18px') : '1px', height: isPhone ? (training ? '62px' : '82px') : '59px', margin: isPhone ? (training ? '30px 12px 6px 28px' : '55px 20px 14px 25px') : (training ? '20px 12px 4px 0' : '20px 35px 4px 0'), backgroundColor: '#F5F7FA', boxShadow: '4px 4px 4px #242A3726'}}>{training ? (reading.length + finishing.length) : selectBook.length}</p>
+                                    <p style={{fontSize: isPhone ? (training ? '11px': '14px') : '12px', color: '#898F9F', margin: isPhone ? (training ? '0 17px 30px 34px' : '0 37px 55px 42px') : (training ? "0 12px 8px 0" : '0 35px 8px 0'), textAlign: 'center', width: isPhone ? (training ? '52px': '66px') : '100px'}}>Кiлькiсть книжок</p>
                                 </div>
-                            ) : (
-                                <></>
-                            )}
+                                <div>
+                                    <p style={{fontFamily: '"Open Sans", serif', textAlign: 'center', fontWeight: 700, fontSize: '45px', color: '#091E3F', width: isPhone ? (training ? '63px' : '100px') : '100px', paddingTop: isPhone ? (training ? '1px' : '18px') : '1px', height: isPhone ? (training ? '62px' : '82px') : '59px', margin: isPhone ? (training ? '30px 8px 6px 0' : '55px 0 14px') : (training ? '20px 12px 4px 0' : '20px 35px 4px 0'), backgroundColor: '#F5F7FA', boxShadow: '4px 4px 4px #242A3726'}}>{data3}</p>
+                                    <p style={{fontSize: isPhone ? (training ? '11px': '14px') : '12px',color: '#898F9F', margin: isPhone ? (training ? '0 13px 30px 6px' : '0 0 55px 17px') : (training ? "0 12px 8px 0" : '0 35px 8px 0'), textAlign: 'center', width: isPhone ? (training ? '52px': '66px') : '100px'}}>Кількість днів</p>
+                                </div>
+                                {training ? (
+                                    <div>
+                                        <p style={{fontFamily: '"Open Sans", serif', textAlign: 'center', fontWeight: 700, fontSize: '45px', color: '#FF6B08', width: isPhone ? '63px' : '100px', paddingTop: '1px', height: isPhone ? '62px' : '59px', margin: isPhone ? '30px 0 6px 4px' : '20px 0 4px', backgroundColor: '#F5F7FA', boxShadow: '4px 4px 4px #242A3726'}}>{reading.length}</p>
+                                        <p style={{fontSize: isPhone ? '11px' : '12px',color: '#898F9F', textAlign: 'center', margin: isPhone ? '0 0 30px' : "0 0 8px 0", width: isPhone ? '73px' : ''}}>Залишилось книжок</p>
+                                    </div>
+                                ) : (
+                                    <></>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <></>
                     )}
                     {training ? (<></>) : (
                         <div>
-                            <p style={{fontFamily: '"Montserrat", serif', fontWeight: 600, fontSize: '20px', backgroundColor: '#B1B5C2', margin: isPad ? '0 0 25px' : '20px 0 25px', padding: isPad ? '18px calc(50vw - 133px)' : '18px 355px', color: '#FFF'}}>Моє тренування</p>
+                            <p style={{fontFamily: '"Montserrat", serif', fontWeight: 600, fontSize: '20px', width: '176px', backgroundColor: '#B1B5C2', margin: isPad ? '0 0 25px' : '20px 0 25px', padding: isPhone ? '18px calc(50vw - 113px)' : (isPad ? '18px calc(50vw - 133px)' : '18px 355px'), color: '#FFF'}}>Моє тренування</p>
                             <div>
-                                <div style={{fontFamily: '"Montserrat", serif', display: 'flex'}}>
+                                <div style={{fontFamily: '"Montserrat", serif', display: isPhone ? 'block' : 'flex'}}>
                                     <div style={{display: 'flex'}}>
-                                        <p style={{margin: '14px 5px 0 calc(50vw - 318px)', fontWeight: 400, color: '#A6ABB9', width: '10px'}}>З</p>
-                                        <input onFocus={() => setFocused1(true)} onBlur={() => setFocused1(false)}  type='date' value={date1} onChange={e => onChangeStartDate(e.target.value, 'date1')} style={{cursor: 'pointer', outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused1 ? '#fff' : '#F6F7FB', border: focused1 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: '0 45px 0 0', width:'222px', height: '42px', boxShadow: focused1 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
+                                        <p style={{margin: isPhone ? '14px 5px 0 calc(50vw - 150px)' : (isPad ? '14px 5px 0 calc(50vw - 318px)' : '14px 5px 0 170px'), fontWeight: 400, color: '#A6ABB9', width: '10px'}}>З</p>
+                                        <input onFocus={() => setFocused1(true)} onBlur={() => setFocused1(false)}  type='date' value={date1} onChange={e => onChangeStartDate(e.target.value, 'date1')} style={{cursor: 'pointer', outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused1 ? '#fff' : '#F6F7FB', border: focused1 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: isPhone ? '0 0 20px' : '0 45px 0 0', width: focused1 ? '224px' : '222px', height: focused1 ? '44px' : '42px', boxShadow: focused1 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
                                     </div>
                                     <div style={{display: 'flex'}}>
-                                        <p style={{margin: '14px 5px 0 0', fontWeight: 400, color: '#A6ABB9', width: '23px'}}>До</p>
-                                        <input onFocus={() => setFocused2(true)} onBlur={() => setFocused2(false)}  type='date' value={date2} onChange={e => onChangeStartDate(e.target.value, 'date2')} style={{cursor: 'pointer', outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused2 ? '#fff' : '#F6F7FB', border: focused2 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', width:'209px', height: '42px', boxShadow: focused2 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
+                                        <p style={{margin: isPhone ? '14px 5px 0 calc(50vw - 150px)' : '14px 5px 0 0', fontWeight: 400, color: '#A6ABB9', width: '23px'}}>До</p>
+                                        <input onFocus={() => setFocused2(true)} onBlur={() => setFocused2(false)}  type='date' value={date2} onChange={e => onChangeStartDate(e.target.value, 'date2')} style={{cursor: 'pointer', outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused2 ? '#fff' : '#F6F7FB', border: focused2 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', width: focused2 ? '211px' : '209px', height: focused2 ? '44px' : '42px', boxShadow: focused2 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
                                     </div>
                                 </div>
-                                <div>
-                                    <input value={train.bookname} onFocus={() => setFocused3(true)} onBlur={() => setFocused3(false)} placeholder='Обрати книги з бібліотеки' onChange={e => onChange(e.target.value, 'bookname')} style={{outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused3 ? '#fff' : '#F6F7FB', border: focused3 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: isPad ? '25px 25px 0 0' :'25px 46px 0 0', width:  isPad ? (focused3 ? 'calc(100vw - 299px)' : 'calc(100vw - 301px)') : (focused3 ? '658px' : '656px'), height:  focused3 ? '44px' : '42px', boxShadow: focused3 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
-                                    <button onClick={inputData} style={{backgroundColor: "#F6F7FB", border: '1px solid #242A37', width: '171px', height: '42px', cursor: 'pointer'}}>Додати</button>
-                                </div>
-                                    <div style={{backgroundColor: '#fff', width: isPad ? 'calc(100vw - 299px)' : '669px', borderRadius: '0 0 6px 6px', position: 'absolute', marginLeft: '1px'}}>
-                                    {needbooks.length === 0 || train.bookname == '' || !focused3  ? (
-                                            <></>
-                                        ) : (
-                                                needbooks.map(book => (
-                                                    <p key={book.id} onMouseDown={() => {
-                                                        const real = books.find(b => String(b.id) === String(book.id)) || book;
-                                                        !selectBook.some(b => String(b.id) === String(real.id)) ? setSelectBook(prev => [...prev, real]) : null;
-                                                        setTrain({ bookname: book.title });
-                                                        setNeedbooks([]);
-                                                    }} style={{cursor: 'pointer', margin: '0', padding: '0 10px'}}>{book.title}</p>
+                                {isPhone ? (<></>) : (
+                                    <>
+                                        <div>
+                                            <input value={train.bookname} onFocus={() => setFocused3(true)} onBlur={() => setFocused3(false)} placeholder='Обрати книги з бібліотеки' onChange={e => onChange(e.target.value, 'bookname')} style={{outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused3 ? '#fff' : '#F6F7FB', border: focused3 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', margin: isPad ? '25px 25px 0 0' :'25px 46px 0 0', width:  isPad ? (focused3 ? 'calc(100vw - 299px)' : 'calc(100vw - 301px)') : (focused3 ? '658px' : '656px'), height:  focused3 ? '44px' : '42px', boxShadow: focused3 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
+                                            <button onClick={inputData} style={{backgroundColor: "#F6F7FB", border: '1px solid #242A37', width: '171px', height: '42px', cursor: 'pointer'}}>Додати</button>
+                                        </div>
+                                        <div style={{backgroundColor: '#fff', width: isPad ? 'calc(100vw - 299px)' : '669px', borderRadius: '0 0 6px 6px', position: 'absolute', marginLeft: '1px'}}>
+                                            {needbooks.length === 0 || train.bookname == '' || !focused3  ? (
+                                                    <></>
+                                                ) : (
+                                                        needbooks.map(book => (
+                                                            <p key={book.id} onMouseDown={() => {
+                                                                const real = books.find(b => String(b.id) === String(book.id)) || book;
+                                                                !selectBook.some(b => String(b.id) === String(real.id)) ? setSelectBook(prev => [...prev, real]) : null;
+                                                                setTrain({ bookname: book.title });
+                                                                setNeedbooks([]);
+                                                            }} style={{cursor: 'pointer', margin: '0', padding: '0 10px'}}>{book.title}</p>
+                                                        )
+                                                    )
                                                 )
-                                            )
-                                        )
-                                    }
-                                </div>
+                                            }
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     )}
                     <div>
                         <hr style={{color: '#898F9F', margin: '25px 0 0'}} />
-                        <div style={{display: isPad ? 'grid' : 'flex', gridTemplateColumns: isPad ? 'repeat(4, 1fr)' : '', color: '#898F9F' }}>
-                            <p style={{width: '90px', margin: isPad ? '10px calc(100vw - 543px) 10px 0' : '10px 269px 10px calc(50% - 445px)', justifyContent: 'start'}}>Назва книги</p>
-                            <div style={{justifyContent: 'center'}}></div>
-                            <div style={{justifyContent: 'end', display: 'flex'}}>
-                                <p style={{margin: '10px 185px 10px 0'}}>Автор</p>
-                                <p style={{margin: isPad ? '10px 29px 10px 0' : '10px 73px 10px 0'}}>Рiк</p>
-                                <p style={{margin: isPad ? '10px 0' : '10px 0'}}>Стор.</p>
-                            </div>
-                        </div>
-                        <hr style={{color: '#898F9F', margin: '0'}} />
+                        {isPhone ? (<></>) : (
+                            <>
+                                <div style={{display: isPad ? 'grid' : 'flex', gridTemplateColumns: isPad ? 'repeat(4, 1fr)' : '', color: '#898F9F' }}>
+                                    <p style={{width: '90px', margin: isPad ? '10px calc(100vw - 543px) 10px 0' : '10px 269px 10px calc(50% - 445px)', justifyContent: 'start'}}>Назва книги</p>
+                                    <div style={{justifyContent: 'center'}}></div>
+                                    <div style={{justifyContent: 'end', display: 'flex'}}>
+                                        <p style={{margin: '10px 185px 10px 0'}}>Автор</p>
+                                        <p style={{margin: isPad ? '10px 29px 10px 0' : '10px 73px 10px 0'}}>Рiк</p>
+                                        <p style={{margin: isPad ? '10px 0' : '10px 0'}}>Стор.</p>
+                                    </div>
+                                </div>
+                                <hr style={{color: '#898F9F', margin: '0'}} />
+                            </>
+                        )}
                         {training ? (
                             <>
                                 {needfinish.map(book => (
-                                    <div key={book.id} style={{display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, width: isPad ? 'calc(100vw - 90px)' : '886px'}}>
-                                    <input type='checkbox' onChange={() => unfinishBook(book.id)} checked={true} style={{cursor: 'pointer', width: '15px', height: '15px', border: '1px solid #FF6B08', borderRadius: '0', accentColor: '#FF6B08', margin: '24px 24px 0 0'}}  />
-                                        <p style={{margin: '21px 10px 0 0', width: isPad ? 'calc(100vw - 480px)' : '309px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.title}</p>
-                                        <p style={{margin: '21px 10px 0 0', width: '219px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.author}</p>
-                                        <p style={{margin: '21px 10px 0 0', width: isPad ? '40px' : '84px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.year}</p>
-                                        <p style={{margin: '21px 10px 0 0', width: isPad ? '40px' : '138px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.pages}</p>
+                                    <div key={book.id} style={{borderBottom: isPad || isPhone ? '1px solid #E0E5EB' : '', paddingBottom: isPad || isPhone ? '24px' : '', display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, width: isPhone ? 'calc(100vw - 50px)' : (isPad ? 'calc(100vw - 90px)' : '886px')}}>
+                                        <input type='checkbox' onChange={() => unfinishBook(book.id)} checked={true} style={{cursor: 'pointer', width: '15px', height: '15px', border: '1px solid #FF6B08', borderRadius: '0', accentColor: '#FF6B08', margin: isPhone ? '25px 24px auto 0' : '24px 24px 0 0'}}  />
+                                        <div style={{display: isPhone ? 'block' : 'flex'}}>
+                                            <p style={{margin: isPhone ? '22px 10px 0 0' : '21px 10px 0 0', width: isPhone ? 'calc(100vw - 108px)' : (isPad ? 'calc(100vw - 480px)' : '309px'), whiteSpace: isPhone ? '' : 'nowrap', overflow: isPhone ? '' : 'auto'}}>{book.title}</p>
+                                            <div style={{display: 'flex'}}>
+                                                {isPhone ? (<p style={{margin: '22px 16px 20px 0', color: '#898F9F',width: '55px', fontSize: '16px'}}>Автор:</p>) : (<></>)}
+                                                <p style={{margin: '21px 10px 0 0', width: isPhone ? 'calc(100vw - 170px)' : '219px', whiteSpace: 'nowrap', overflow: 'auto'}}>{book.author}</p>
+                                            </div>
+                                            <div style={{display: 'flex'}}>
+                                                {isPhone ? (<p style={{margin: '0 42px 20px 0', color: '#898F9F',width: '29px', fontSize: '16px'}}>Рік:</p>) : (<></>)}
+                                                <p style={{margin: '21px 10px 0 0', width: isPhone ? 'calc(100vw - 170px)' : (isPad ? '40px' : '84px'), whiteSpace: 'nowrap', overflow: 'auto'}}>{book.year}</p>
+                                            </div>
+                                            <div style={{display: 'flex'}}>
+                                                {isPhone ? (<p style={{margin: '0 23px 20px 0', color: '#898F9F',width: '48px', fontSize: '16px'}}>Стор.:</p>) : (<></>)}
+                                                <p style={{margin: '21px 10px 0 0', width: isPhone ? 'calc(100vw - 170px)' : (isPad ? '40px' : '138px'), whiteSpace: 'nowrap', overflow: 'auto'}}>{book.pages}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                                 {reading.map(book => (
-                                    <div key={book.id} style={{display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, width: isPad ? 'calc(100vw - 90px)' : '886px'}}>
-                                        <input type='checkbox' onChange={() => finishBook(book.id)} style={{cursor: 'pointer', appearance: 'none', width: '15px', height: '15px', border: '1px solid #A6ABB9', borderRadius: '0', margin: '24px 24px 0 0'}} />
-                                        <p style={{margin: '21px 10px 0 0', width: isPad ? 'calc(100vw - 480px)' : '309px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.title}</p>
-                                        <p style={{margin: '21px 10px 0 0', width: '219px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.author}</p>
-                                        <p style={{margin: '21px 10px 0 0', width: isPad ? '40px' : '84px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.year}</p>
-                                        <p style={{margin: '21px 10px 0 0', width: isPad ? '40px' : '138px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.pages}</p>
+                                    <div key={book.id} style={{borderBottom: isPad || isPhone ? '1px solid #E0E5EB' : '', paddingBottom: isPad || isPhone ? '24px' : '', display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, width: isPhone ? 'calc(100vw - 50px)' : (isPad ? 'calc(100vw - 90px)' : '886px')}}>
+                                        <input type='checkbox' onChange={() => finishBook(book.id)} checked={false} style={{cursor: 'pointer', appearance: 'none', width: '15px', height: '15px', border: '1px solid #A6ABB9', borderRadius: '0', margin: '24px 24px 0 0'}}  />
+                                        <div style={{display: isPhone ? 'block' : 'flex'}}>
+                                            <p style={{margin: isPhone ? '22px 10px 0 0' : '21px 10px 0 0', width: isPhone ? 'calc(100vw - 108px)' : (isPad ? 'calc(100vw - 480px)' : '309px'), whiteSpace: isPhone ? '' : 'nowrap', overflow: isPhone ? '' : 'auto'}}>{book.title}</p>
+                                            <div style={{display: 'flex'}}>
+                                                {isPhone ? (<p style={{margin: '22px 16px 20px 0', color: '#898F9F',width: '55px', fontSize: '16px'}}>Автор:</p>) : (<></>)}
+                                                <p style={{margin: '21px 10px 0 0', width: isPhone ? 'calc(100vw - 170px)' : '219px', whiteSpace: 'nowrap', overflow: 'suto'}}>{book.author}</p>
+                                            </div>
+                                            <div style={{display: 'flex'}}>
+                                                {isPhone ? (<p style={{margin: '0 42px 20px 0', color: '#898F9F',width: '29px', fontSize: '16px'}}>Рік:</p>) : (<></>)}
+                                                <p style={{margin: '21px 10px 0 0', width: isPhone ? 'calc(100vw - 170px)' : (isPad ? '40px' : '84px'), whiteSpace: 'nowrap', overflow: 'auto'}}>{book.year}</p>
+                                            </div>
+                                            <div style={{display: 'flex'}}>
+                                                {isPhone ? (<p style={{margin: '0 23px 20px 0', color: '#898F9F',width: '48px', fontSize: '16px'}}>Стор.:</p>) : (<></>)}
+                                                <p style={{margin: '21px 10px 0 0', width: isPhone ? 'calc(100vw - 170px)' : (isPad ? '40px' : '138px'), whiteSpace: 'nowrap', overflow: 'auto'}}>{book.pages}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </>
@@ -595,30 +645,41 @@ function Training() {
                             <></>
                         ) : (
                             selectBook.map(book => (
-                                <div key={book.id} style={{display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, width: isPad ? 'calc(100vw - 90px)' : '856px'}}>
-                                    <svg style={{margin: '21px 17px 0 0'}} width="22" height="17" viewBox="0 0 22 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <div key={book.id} style={{borderBottom: isPad || isPhone ? '1px solid #E0E5EB' : '', paddingBottom: isPad || isPhone ? '24px' : '', display: 'flex', color: '#242A37', fontFamily: '"Montserrat", serif', fontWeight: 500, width: isPad ? 'calc(100vw - 90px)' : '886px'}}>
+                                    <svg style={{margin: isPhone ? '24px 17px 0 0' : '21px 17px 0 0'}} width="22" height="17" viewBox="0 0 22 17" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M20 0.5C18.89 0.15 17.67 0 16.5 0C14.55 0 12.45 0.4 11 1.5C9.55 0.4 7.45 0 5.5 0C3.55 0 1.45 0.4 0 1.5V16.15C0 16.4 0.25 16.65 0.5 16.65C0.6 16.65 0.65 16.6 0.75 16.6C2.1 15.95 4.05 15.5 5.5 15.5C7.45 15.5 9.55 15.9 11 17C12.35 16.15 14.8 15.5 16.5 15.5C18.15 15.5 19.85 15.8 21.25 16.55C21.35 16.6 21.4 16.6 21.5 16.6C21.75 16.6 22 16.35 22 16.1V1.5C21.4 1.05 20.75 0.75 20 0.5ZM20 14C18.9 13.65 17.7 13.5 16.5 13.5C14.8 13.5 12.35 14.15 11 15V3.5C12.35 2.65 14.8 2 16.5 2C17.7 2 18.9 2.15 20 2.5V14Z" fill="#A6ABB9"/>
                                         <path d="M16.5 6C17.38 6 18.23 6.09 19 6.26V4.74C18.21 4.59 17.36 4.5 16.5 4.5C14.8 4.5 13.26 4.79 12 5.33V6.99C13.13 6.35 14.7 6 16.5 6Z" fill="#A6ABB9"/>
                                         <path d="M12 7.99003V9.65003C13.13 9.01003 14.7 8.66003 16.5 8.66003C17.38 8.66003 18.23 8.75003 19 8.92003V7.40003C18.21 7.25003 17.36 7.16003 16.5 7.16003C14.8 7.16003 13.26 7.46003 12 7.99003Z" fill="#A6ABB9"/>
                                         <path d="M16.5 9.82996C14.8 9.82996 13.26 10.12 12 10.66V12.32C13.13 11.68 14.7 11.33 16.5 11.33C17.38 11.33 18.23 11.42 19 11.59V10.07C18.21 9.90996 17.36 9.82996 16.5 9.82996Z" fill="#A6ABB9"/>
                                     </svg> 
-                                    <p style={{margin: '21px 10px 0 0', width: isPad ? 'calc(100vw - 480px)' : '309px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.title}</p>
-                                    <p style={{margin: '21px 10px 0 0', width: '219px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.author}</p>
-                                    <p style={{margin: '21px 10px 0 0', width: isPad ? '40px' : '84px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.year}</p>
-                                    <p style={{margin: '21px 10px 0 0', width: isPad ? '40px' : '138px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{book.pages}</p>
-                                    <svg onClick={() => delBook(book.id)} style={{cursor: 'pointer', margin: isPad ? '21px 0 0' : '21px 25px 0 0'}} width="14" height="18" viewBox="0 0 14 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <div style={{display: isPhone ? 'block' : 'flex'}}>
+                                        <p style={{margin: isPhone ? '22px 10px 0 0' : '21px 10px 0 0', width: isPhone ? 'calc(100vw - 153px)' : (isPad ? 'calc(100vw - 480px)' : '309px'), whiteSpace: isPhone ? '' : 'nowrap', overflow: isPhone ? '' : 'auto'}}>{book.title}</p>
+                                        <div style={{display: 'flex'}}>
+                                            {isPhone ? (<p style={{margin: '22px 16px 20px 0', color: '#898F9F',width: '55px', fontSize: '16px'}}>Автор:</p>) : (<></>)}
+                                            <p style={{margin: isPhone ? '21px 10px 0 0' : '21px 10px 0 0', width: isPhone ? 'calc(100vw - 224px)' : '219px', whiteSpace: 'nowrap', overflow: 'auto'}}>{book.author}</p>
+                                        </div>
+                                        <div style={{display: 'flex'}}>
+                                            {isPhone ? (<p style={{margin: '0 42px 20px 0', color: '#898F9F',width: '29px', fontSize: '16px'}}>Рік:</p>) : (<></>)}
+                                            <p style={{margin: isPhone ? '0 10px 21px 0' : '21px 10px 0 0', width: isPhone ? 'calc(100vw - 224px)' : (isPad ? '40px' : '84px'), whiteSpace: 'nowrap', overflow: 'auto'}}>{book.year}</p>
+                                        </div>
+                                        <div style={{display: 'flex'}}>
+                                            {isPhone ? (<p style={{margin: '0 23px 20px 0', color: '#898F9F',width: '48px', fontSize: '16px'}}>Стор.:</p>) : (<></>)}
+                                            <p style={{margin: isPhone ? '0 8px 21px 0' : '21px 8px 0 0', width: isPhone ? 'calc(100vw - 224px)' : (isPad ? '40px' : '138px'), whiteSpace: 'nowrap', overflow: 'auto'}}>{book.pages}</p>
+                                        </div>
+                                    </div>
+                                    <svg onClick={() => delBook(book.id)} style={{cursor: 'pointer', margin: isPad || isPhone ? '21px 0 0' : '21px 25px 0 0'}} width="14" height="18" viewBox="0 0 14 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M11 6V16H3V6H11ZM9.5 0H4.5L3.5 1H0V3H14V1H10.5L9.5 0ZM13 4H1V16C1 17.1 1.9 18 3 18H11C12.1 18 13 17.1 13 16V4Z" fill="#A6ABB9"/>
                                     </svg>
                                 </div>
                             ))
                         )}
-                        <hr style={{color: '#898F9F', margin: '41px 0 0'}} />
+                        {isPad || isPhone ? (<></>) : (<hr style={{color: '#898F9F', margin: '41px 0 0'}} />)}
                         {training ? (
                             <></>
                         ) : (
-                            <button onClick={startTraining} style={{color: '#fff', cursor: 'pointer', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 600, fontSize: '16px', padding: '12px 30px', margin: isPad ? '40px 0' : '40px 0 40px calc(50% - 100px)'}}>Почати тренування</button>
+                            <button onClick={startTraining} style={{color: '#fff', cursor: 'pointer', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 600, fontSize: isPhone ? '14px' : '16px', padding: isPhone ? '12px 13px' : '12px 16px 12px 15px', margin: isPhone ? '35px 0 40px calc(50% - 85.5px)' : '40px 0 40px calc(50% - 100px)'}}>Почати тренування</button>
                         )}
-                        <div style={{width: isPad ? "calc(100vw - 90px)" :'886px', height: '340px', backgroundColor: '#fff', margin: isPad ? (training ? '40px 0' : '0 0 calc(100% - 904px) 0') : (training ? '40px 0 calc(100% - 595px) calc(50% - 443px)': '0 0 calc(100% - 830px) calc(50% - 443px)'), boxShadow: '2px 2px 2px #091E3F40'}}>
+                        <div style={{width: isPhone ? 'calc(100vw - 50px)' : (isPad ? "calc(100vw - 90px)" : '886px'), height: isPhone ? '290px' : '340px', backgroundColor: '#fff', margin: isPhone ? (training ? '30px 0' : '0 0 53px 0') : (isPad ? (training ? '40px 0' : '0 0 56px 0') : (training ? '40px 0 41px calc(50% - 443px)': '0 0 41px calc(50% - 443px)')), boxShadow: '2px 2px 2px #091E3F40'}}>
                             {training && currentUserPages.length > 0 ? (
                                 <Line data={chartData} options={chartOptions} />
                             ) : <p style={{fontFamily: '"Montserrat", serif', fontWeight: 500, textAlign: 'center', padding: '161px 0', margin: '0'}}>Недостатьно iнформацiї.</p>}
@@ -626,7 +687,7 @@ function Training() {
                     </div>
                 </div>
                 <div>
-                    {isPad ? (
+                    {isPad || isPhone ? (
                         <></>
                     ) : (
                         <>
@@ -652,21 +713,21 @@ function Training() {
                         </>
                     )}
                     {training ? (
-                        <div style={{width: isPad? 'calc(100vw - 90px - (50vw - 300px))' : '240px', backgroundColor: '#fff', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37', padding: isPad? '24px 0 21px calc(50vw - 300px)' : '24px 16px 0 19px', marginLeft: isPad ? '0' : '41px', boxShadow: '2px 2px 2px #091E3F1A'}}>
-                            <p style={{margin: isPad? '0 0 0 207px' : '0 0 0 77px', fontSize: '14px', }}>Результати</p>
+                        <div style={{width: isPhone ? '240px' : (isPad? 'calc(100vw - 90px - (50vw - 300px))' : '240px'), backgroundColor: '#fff', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37', padding: isPhone ? '24px 13px 13px 17px' : (isPad? '24px 0 21px calc(50vw - 300px)' : '24px 16px 0 19px'), marginLeft: isPhone ? 'calc(50vw - 160px)' : (isPad  ? '0' : '41px'), boxShadow: '2px 2px 2px #091E3F1A'}}>
+                            <p style={{margin: isPad && !isPhone ? '0 0 0 207px' : '0 0 0 77px', width: '84px', fontSize: '14px'}}>Результати</p>
                             <div style={{display: 'flex'}}>
                                 <p style={{margin: '12px 103px 7px 0', color: '#A6ABB9', fontWeight: 500, fontSize: '11px'}}>Дата</p>
                                 <p style={{margin: '12px 0 7px 0', color: '#A6ABB9', fontWeight: 500, fontSize: '11px'}}>Кількість сторінок</p>
                             </div>
-                            <input onFocus={() => setFocused4(true)} onBlur={() => setFocused4(false)}  type='date' value={data4} onChange={e => onChangeDate4(e.target.value, 'data4')} style={{cursor: 'pointer', outline: 'none', fontWeight: 400, color: '#242A37', backgroundColor: '#fff', border: focused4 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 2px', fontSize: '12px', margin: '0 20px 0 0', width: focused5 ? '108px' : '106px', height: focused5 ? '42px' : '40px', boxShadow: focused4 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
+                            <input onFocus={() => setFocused4(true)} onBlur={() => setFocused4(false)}  type='date' value={data4} onChange={e => onChangeDate4(e.target.value, 'data4')} style={{cursor: 'pointer', outline: 'none', fontWeight: 400, color: '#242A37', backgroundColor: '#fff', border: focused4 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 2px', fontSize: '12px', margin: '0 20px 0 0', width: focused4 ? '108px' : '106px', height: focused4 ? '42px' : '40px', boxShadow: focused4 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
                             <input type='number' onFocus={() => setFocused5(true)} onBlur={() => setFocused5(false)} value={countPages} onChange={e => onChangePages(e.target.value, 'countPages')} placeholder='...' style={{outline: 'none', fontWeight: 400, color: '#242A37', backgroundColor: '#fff', border: focused5 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', width: focused5 ? '96px' : '94px', height: focused5 ? '42px' : '40px', boxShadow: focused5 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}}  />
-                            <button onClick={addDate} style={{color: '#fff', cursor: 'pointer', backgroundColor: '#FF6B08', border: '1px solid #FF6B08', fontSize: '16px', padding: '11px 54px', margin: isPad ? '0 45px 0 30px' : '20px 0 40px 0'}}>Додати результат</button>
+                            <button onClick={addDate} style={{color: '#fff', cursor: 'pointer', backgroundColor: '#FF6B08', border: '1px solid #FF6B08', fontSize: '16px', padding: isPhone ? '11px 19px' : '11px 54px', margin: isPhone ? '19px 0 39px 33px' : isPad ? '0 45px 0 30px' : '20px 0 40px 0'}}>Додати результат</button>
                             <div style={{display: 'flex'}}>
-                                {isPad ? (<></>) : (
+                                {isPad && !isPhone ? (<></>) : (
                                     <hr style={{margin: '6px 0 0', width: '70px', height: '0', color: '#E0E5EB'}} />
                                 )}
-                                <p style={{margin: isPad ? '40px 5px 0 0' : '0 5px', fontWeight: 700, fontSize: '12px'}}>СТАТИСТИКА</p>
-                                <hr style={{margin: isPad ? '46px 5px 0 0' : '6px 0 0', width: isPad ? '145px' : '70px', height: '0', color: '#E0E5EB'}} />
+                                <p style={{margin: isPad && !isPhone ? '40px 5px 0 0' : '0 5px', fontWeight: 700, fontSize: '12px'}}>СТАТИСТИКА</p>
+                                <hr style={{margin: isPad && !isPhone ? '46px 5px 0 0' : '6px 0 0', width: isPad && !isPhone ? '145px' : '70px', height: '0', color: '#E0E5EB'}} />
                             </div>
                             {currentUserPages.length === 0 ? (
                                 <></>
@@ -683,8 +744,17 @@ function Training() {
                         <></>
                     )}
                 </div>
+                {isPhone ? (
+                    <Link to='/training/addbook'>
+                        <button style={{cursor: 'pointer', height: '52px', marginLeft: 'calc(50vw - 26px)', color: '#fff', backgroundColor: '#FF6B08', border: '0', borderRadius: '50%', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: '18px', cursor: 'pointer', position: 'fixed', zIndex: 100, bottom: '15px', left: '0px'}}>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M15.1999 7.19998H8.80002V0.799949C8.80002 0.358446 8.44158 0 7.99993 0C7.55842 0 7.19998 0.358446 7.19998 0.799949V7.19998H0.799949C0.358446 7.19998 0 7.55842 0 7.99993C0 8.44158 0.358446 8.80002 0.799949 8.80002H7.19998V15.1999C7.19998 15.6416 7.55842 16 7.99993 16C8.44158 16 8.80002 15.6416 8.80002 15.1999V8.80002H15.1999C15.6416 8.80002 16 8.44158 16 7.99993C16 7.55842 15.6416 7.19998 15.1999 7.19998Z" fill="white"/>
+                            </svg>
+                        </button>
+                    </Link>
+                ) : (<></>)}
             </main>
-        </div>
+        </>
     )
 }
 

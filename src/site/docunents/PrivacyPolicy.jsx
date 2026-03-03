@@ -9,7 +9,7 @@ function PrivacyPolicy() {
                     Політика конфіденційності для інтернет сайту Book Reading
                 </p>
             </header>
-            <div style={{fontFamily: 'Montserrat, serif', fontWeight: 400, fontSize: '14px', color: '#242A37', width: '700px', marginLeft: 'calc(50% - 350px)'}}>
+            <main style={{fontFamily: 'Montserrat, serif', fontWeight: 400, fontSize: '14px', color: '#242A37', width: '80vw', marginLeft: '15vw'}}>
                 <p style={{fontWeight: 500, fontSize: '16px', margin: '20px 0'}}>
                     Book Reading – це навчальний проект, розроблений для демонстраційних цілей. Я дуже серйозно ставлюся до вашої конфіденційності, навіть у рамках цього навчального проекту.
                 </p>
@@ -37,7 +37,7 @@ function PrivacyPolicy() {
                     Чи передаю я дані третім сторонам:
                 </p>
                 <p style={{margin: '0'}}>
-                    Я не передаю вашу особисту інформацію жодним третім особам або сервісам.
+                    Я не передаю вашу особисту інформацію жодним третім особам або сервісам окрiм сайту-хостингу йього проекту. Чому? Тому що бюджет навчального проекту 0грн, а в мене вимикають свiтло.
                 </p>
                 <p style={{fontWeight: 500,fontSize: '16px', margin: '10px 0 0'}}>           
                     Зберігання даних:
@@ -61,12 +61,12 @@ function PrivacyPolicy() {
                     Останнє оновлення: 28.02.2026
                 </p>
                 <Link to="/login">
-                    <button style={{backgroundColor: "#fff", border: '1px solid #242A37', width: '127px', height: '40px', cursor: 'pointer'}}>Увiйти</button>                                
+                    <button style={{margin: '20px 0', backgroundColor: "#fff", border: '1px solid #242A37', width: '127px', height: '40px', cursor: 'pointer'}}>Увiйти</button>                                
                 </Link>
                 <Link to="/registration">
-                    <button style={{margin: '20px 0 20px 445px', color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: '11px 23px', cursor: 'pointer'}}>Реєстрація</button>
+                    <button style={{margin: '20px 0 20px calc(80vw - 255px)', color: '#fff', backgroundColor: '#FF6B08', border: '0', fontFamily: '"Montserrat", serif', fontWeight: 500, fontSize: '14px', padding: '11px 23px', cursor: 'pointer'}}>Реєстрація</button>
                 </Link>
-            </div>
+            </main>
         </>
     )
 }

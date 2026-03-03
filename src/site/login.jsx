@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import { useContext, useState, useEffect } from 'react';
 const API_BASE = import.meta.env.VITE_API_BASE;
 import background_picture_desctop from './pictures/Registration_picture_for_desctop.jpg';
 import background_picture_pad from './pictures/Registration_picture_for_pad.jpg';
@@ -22,6 +22,15 @@ function Login() {
     })
     const isPad = windowWidth < 1280 && windowWidth > 768;
     const isPhone = windowWidth < 768;
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('currentUser');
+            const saved = raw ? JSON.parse(raw) : null;
+            saved ? navigate('/library') : null;
+        } catch (e) {
+            null
+        }
+    })
     const handleGoogleLoginSuccess = (credentialResponse) => {
         try {
             const id_token = credentialResponse?.credential 
@@ -97,7 +106,7 @@ function Login() {
   }
 };
     return (
-        <div>
+        <>
             <header>
                 <p style={{fontFamily: '"Abril Fatface", serif', fontWeight: 400, padding: '19px 15px', margin: '0', width: '535px'}}>BR</p>
             </header>
@@ -142,7 +151,7 @@ function Login() {
                     <p style={{margin: isPhone ? ' 0 0 25px' : (isPad ? '0 0 75px' :'0'), color: '#898F9F', fontFamily: '"Montserrat", serif', fontWeight: 500}}>Бэкон Ф.</p>
                 </div>
             </main>
-        </div>
+        </>
     );
 };
 
