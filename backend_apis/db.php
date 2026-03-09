@@ -9,3 +9,4 @@ if ($mysqli->connect_error) {
     die("Помилка пiдключення: " . $mysqli->connect_error);
 }
 ?>
+/*hjhjh */
