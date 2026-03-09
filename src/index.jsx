@@ -11,6 +11,7 @@ import TermsOfService from './site/docunents/TermsOfService.jsx';
 import Enter from './site/enter.jsx';
 import LibraryPhoneAddbook from './site/libraryPhoneAddbook.jsx';
 import TrainingPhoneAddbook from './site/trainingPhoneAddbook.jsx';
+import UserPage from './site/userpage.jsx';
 import { PageStateProvider } from "./site/pagestate.jsx";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -37,8 +38,10 @@ const root = ReactDOM.createRoot(document.getElementById('root')).render(
         <Routes>
           <Route element={<Phone />}>
             <Route path="*" element={<Navigate to="/welcome" replace />} />
-            <Route path='/library/addbook' element={<LibraryPhoneAddbook />} />
-            <Route path='/training/addbook' element={<TrainingPhoneAddbook />} />
+            <Route element={<Logined />}>
+              <Route path='/library/addbook' element={<LibraryPhoneAddbook />} />
+              <Route path='/training/addbook' element={<TrainingPhoneAddbook />} />
+            </Route>
           </Route>
           <Route path="/login" element={<Login />} />
           <Route path="/registration" element={<Registration />} />
@@ -46,6 +49,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route element={<Logined />}>
+            <Route path="/user" element={<UserPage />} />
             <Route path="/library" element={<Library />} />
             <Route path="/training" element={<Training />} />
           </Route>

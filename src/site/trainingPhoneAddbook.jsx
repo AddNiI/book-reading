@@ -59,18 +59,6 @@ function TrainingPhoneAddbook() {
         });
         return { needfinish, wantread, reading, finishing, currentUserPages };
     }, [books, pages, uid])
-    books.forEach(book => {
-        const bid = book.user_id;
-        String(bid) === String(uid) 
-            ? (book.finished)
-                ? book.read_status == 1
-                    ? (needfinish.push(book), finishing.push(book))
-                    : finishing.push(book)
-                : book.read_status == 1
-                    ? reading.push(book)
-                    : wantread.push(book)
-            : null
-    });
     const onChange = async (value, name) => {
         if (name === 'bookname') {
             setTrain(prev => ({ ...prev, bookname: value }));
@@ -186,6 +174,7 @@ function TrainingPhoneAddbook() {
             </div>
         );
     }
+    const booksForSelect = train.bookname.trim() === '' ? wantread : needbooks;
     return (
         <>
             {isModalOpen && (
@@ -215,7 +204,17 @@ function TrainingPhoneAddbook() {
                     <svg width="2" height="33" viewBox="0 0 1 33" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <line x1="0.5" y1="-2.18557e-08" x2="0.500001" y2="33" stroke="#E0E5EB"/>
                     </svg>
-                    <div style={{width: 33,height: 33,borderRadius: '50%',background: '#F5F7FA', margin: '0 0 0 14px',display: 'inline-flex',alignItems: 'center',justifyContent: 'center'}}><p style={{margin:'0', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37'}}>{firstLetter}</p></div>
+                    {currentUser?.Icon ? (
+                        <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                            <img src={currentUser.Icon} alt="avatar" style={{ width: 33, height: 33, borderRadius: "50%", margin: "0 0 0 12px", objectFit: "cover" }}/>
+                        </Link>
+                    ) : (
+                        <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                            <div style={{ width: 33, height: 33, borderRadius: "50%", background: "#F5F7FA", margin: "0 0 0 12px", display: "inline-flex", alignItems: "center", justifyContent: "center"}}>
+                                <p style={{ margin: 0, fontFamily: '"Montserrat", serif', fontWeight: 600, color: "#242A37"}}>{firstLetter}</p>
+                            </div>
+                        </Link>
+                    )}
                     <p onClick={()=>{setIsModalOpen(true)}} style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '7px 13px 0 14px', textDecoration: 'underline'}}>Вихiд</p>
                 </div>
             </header>
@@ -227,22 +226,22 @@ function TrainingPhoneAddbook() {
                 </Link>
                 <div style={{fontFamily: '"Montserrat", serif', fontWeight: 600, fontSize: '20px', margin: '25px 0'}}>
                     <input value={train.bookname} onFocus={() => setFocused3(true)} onBlur={() => setFocused3(false)} placeholder='Обрати книги з бібліотеки' onChange={e => onChange(e.target.value, 'bookname')} style={{marginLeft: '25px', outline: 'none', fontWeight: 400, color: '#A6ABB9', backgroundColor: focused3 ? '#fff' : '#F6F7FB', border: focused3 ? '0' : '1px solid #A6ABB9', padding: '0 0 0 13px', width:  focused3 ? 'calc(100vw - 61px)' : 'calc(100vw - 63px)', height:  focused3 ? '44px' : '42px', boxShadow: focused3 ? 'inset 0 1px 2px #1D1D1B26' : 'none'}} />
-                <div style={{backgroundColor: '#fff', width: 'calc(100vw - 50px)', borderRadius: '0 0 6px 6px', position: 'absolute', marginLeft: '26px'}}>
-                    {needbooks.length === 0 || train.bookname == '' || !focused3  ? (
-                            <></>
-                        ) : (
-                                needbooks.map(book => (
-                                    <p key={book.id} onMouseDown={() => {
-                                        const real = books.find(b => String(b.id) === String(book.id)) || book;
-                                        !selectBook.some(b => String(b.id) === String(real.id)) ? setSelectBook(prev => [...prev, real]) : null;
-                                        setTrain({ bookname: book.title });
-                                        setNeedbooks([]);
-                                    }} style={{cursor: 'pointer', margin: '0', padding: '0 10px'}}>{book.title}</p>
+                    <div style={{backgroundColor: '#fff', width: 'calc(100vw - 50px)', borderRadius: '0 0 6px 6px', position: 'absolute', marginLeft: '26px'}}>
+                        {!focused3  ? (
+                                <></>
+                            ) : (
+                                    booksForSelect.map(book => (
+                                        <p key={book.id} onMouseDown={() => {
+                                            const real = books.find(b => String(b.id) === String(book.id)) || book;
+                                            !selectBook.some(b => String(b.id) === String(real.id)) ? setSelectBook(prev => [...prev, real]) : null;
+                                            setTrain({ bookname: book.title });
+                                            setNeedbooks([]);
+                                        }} style={{cursor: 'pointer', margin: '0', padding: '0 10px'}}>{book.title}</p>
+                                    )
                                 )
                             )
-                        )
-                    }
-                </div>
+                        }
+                    </div>
                     <button onClick={inputData} style={{margin: '35px 0 0 calc(50vw - 85.5px)', backgroundColor: "#F6F7FB", border: '1px solid #242A37', width: '171px', height: '42px', cursor: 'pointer'}}>Додати</button>
                 </div>
             </main>

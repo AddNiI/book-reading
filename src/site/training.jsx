@@ -1,7 +1,7 @@
 import  { useContext, useState, useEffect, useMemo } from 'react';
 const API_BASE = import.meta.env.VITE_API_BASE;
 import { Link } from 'react-router-dom';
-import { PageState } from './pagestate.jsx';
+import { PageState } from './pagestate';
 import { Line } from 'react-chartjs-2';
 import {Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend} from 'chart.js';
 
@@ -58,7 +58,7 @@ function Training() {
         window.addEventListener('resize', changeWidth);
         return () => window.removeEventListener('resize', changeWidth)
     })
-    const isPad = windowWidth < 1280 /* && windowWidth >= 768*/;
+    const isPad = windowWidth < 1280;
     const isPhone = windowWidth < 768;
     function FinishTrainingModal({ onCancel, onConfirm }) {
         return (
@@ -104,7 +104,6 @@ function Training() {
             }
             try {
                 const url = `${API_BASE}/getBooks.php?user_id=${uid}&query=${encodeURIComponent(value)}`;
-                console.debug('getBooks fetch URL:', url);
                 const response = await fetch(url, {
                     headers: {
                         "ngrok-skip-browser-warning": "true"
@@ -118,7 +117,6 @@ function Training() {
                 }
                 const ct = (response.headers.get('content-type') || '').toLowerCase();
                 let data = null;
-                console.debug('getBooks response status:', response.status, 'content-type:', ct);
                 if (ct.includes('application/json')) {
                     try {
                         data = await response.json();
@@ -327,7 +325,6 @@ function Training() {
     const pCount = parseInt(countPages);
     const activeBook = reading.find(b => (b.title || b.bookname) === train.bookname) || reading[0];
     const isInvalid = !activeBook || isNaN(pCount) || pCount <= 0 || !data4;
-
     if (isInvalid) return alert("Заповніть дані");
     try {
         const res = await fetch(`${API_BASE}/addPage.php`, {
@@ -430,6 +427,7 @@ function Training() {
         }
     };
     const chart = []
+    const booksForSelect = train.bookname.trim() === '' ? wantread : needbooks;
     return(
         <>
             {showFinishModal && (
@@ -456,8 +454,20 @@ function Training() {
                 <div style={{justifyContent: 'center', display: 'flex', alignItems: 'center'}}>
                     {isPhone ? (<></>) : (
                         <>
-                            <div style={{width: 33,height: 33,borderRadius: '50%',background: '#F5F7FA', margin: '0 12px 0 0',display: 'inline-flex',alignItems: 'center',justifyContent: 'center'}}><p style={{margin:'0', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37'}}>{firstLetter}</p></div>
-                            <p style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '0'}}>{name}</p>
+                            {currentUser?.Icon ? (
+                                <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                                    <img src={currentUser.Icon} alt="avatar" style={{ width: 33, height: 33, borderRadius: "50%", margin: "0 12px 0 0", objectFit: "cover" }}/>
+                                </Link>
+                            ) : (
+                                <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                                    <div style={{ width: 33, height: 33, borderRadius: "50%", background: "#F5F7FA", margin: "0 12px 0 0", display: "inline-flex", alignItems: "center", justifyContent: "center"}}>
+                                        <p style={{ margin: 0, fontFamily: '"Montserrat", serif', fontWeight: 600, color: "#242A37"}}>{firstLetter}</p>
+                                    </div>
+                                </Link>
+                            )}
+                            <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                                <p style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '0'}}>{name}</p>
+                            </Link>
                         </>
                     )}
                 </div>
@@ -480,9 +490,17 @@ function Training() {
                     <svg width="2" height="33" viewBox="0 0 1 33" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <line x1="0.5" y1="-2.18557e-08" x2="0.500001" y2="33" stroke="#E0E5EB"/>
                     </svg>
-                    {!isPhone ? (<></>) : (
-                        <div style={{width: 33,height: 33,borderRadius: '50%',background: '#F5F7FA', margin: '0 0 0 14px',display: 'inline-flex',alignItems: 'center',justifyContent: 'center'}}><p style={{margin:'0', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37'}}>{firstLetter}</p></div>
-                    )}
+                    {!isPhone ? (<></>) : (currentUser?.Icon) ? (
+                        <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                            <img src={currentUser.Icon} alt="avatar" style={{ width: 33, height: 33, borderRadius: "50%", margin: "0 0 0 12px", objectFit: "cover" }}/>
+                        </Link>
+                    ) : (
+                        <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                            <div style={{ width: 33, height: 33, borderRadius: "50%", background: "#F5F7FA", margin: "0 0 0 12px", display: "inline-flex", alignItems: "center", justifyContent: "center"}}>
+                                <p style={{ margin: 0, fontFamily: '"Montserrat", serif', fontWeight: 600, color: "#242A37"}}>{firstLetter}</p>
+                            </div>
+                        </Link>
+                    )}                        
                     <p onClick={()=>{setIsModalOpen(true)}} style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '7px 13px 0 14px', textDecoration: 'underline'}}>Вихiд</p>
                 </div>
             </header>
@@ -562,10 +580,10 @@ function Training() {
                                             <button onClick={inputData} style={{backgroundColor: "#F6F7FB", border: '1px solid #242A37', width: '171px', height: '42px', cursor: 'pointer'}}>Додати</button>
                                         </div>
                                         <div style={{backgroundColor: '#fff', width: isPad ? 'calc(100vw - 299px)' : '669px', borderRadius: '0 0 6px 6px', position: 'absolute', marginLeft: '1px'}}>
-                                            {needbooks.length === 0 || train.bookname == '' || !focused3  ? (
+                                            {!focused3  ? (
                                                     <></>
                                                 ) : (
-                                                        needbooks.map(book => (
+                                                        booksForSelect.map(book => (
                                                             <p key={book.id} onMouseDown={() => {
                                                                 const real = books.find(b => String(b.id) === String(book.id)) || book;
                                                                 !selectBook.some(b => String(b.id) === String(real.id)) ? setSelectBook(prev => [...prev, real]) : null;

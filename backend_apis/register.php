@@ -57,7 +57,7 @@ if ($stmt->num_rows > 0) {
 }
 $stmt->close();
 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-$stmt = $mysqli->prepare('INSERT INTO users (name, email, password, training, finishDate, readDays) VALUES (?, ?, ?, 0, "", "")');
+$stmt = $mysqli->prepare('INSERT INTO users (name, email, password, Google, training, finishDate, readDays) VALUES (?, ?, ?, 0, 0, "", "")');
 $stmt->bind_param('sss', $name, $email, $hashedPassword);
 $stmt->execute();
 echo json_encode(['success' => true]);

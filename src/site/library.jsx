@@ -200,8 +200,20 @@ function Library() {
                 <div style={{justifyContent: 'center', display: 'flex', alignItems: 'center'}}>
                     {isPhone ? (<></>) : (
                         <>
-                            <div style={{width: 33,height: 33,borderRadius: '50%',background: '#F5F7FA', margin: '0 12px 0 0',display: 'inline-flex',alignItems: 'center',justifyContent: 'center'}}><p style={{margin:'0', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37'}}>{firstLetter}</p></div>
-                            <p style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '0'}}>{name}</p>
+                            {currentUser?.Icon ? (
+                                <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                                    <img src={currentUser.Icon} alt="avatar" style={{ width: 33, height: 33, borderRadius: "50%", margin: "0 12px 0 0", objectFit: "cover" }}/>
+                                </Link>
+                            ) : (
+                                <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                                    <div style={{ width: 33, height: 33, borderRadius: "50%", background: "#F5F7FA", margin: "0 12px 0 0", display: "inline-flex", alignItems: "center", justifyContent: "center"}}>
+                                        <p style={{ margin: 0, fontFamily: '"Montserrat", serif', fontWeight: 600, color: "#242A37"}}>{firstLetter}</p>
+                                    </div>
+                                </Link>
+                            )}
+                            <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                                <p style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '0'}}>{name}</p>
+                            </Link>
                         </>
                     )}
                 </div>
@@ -224,8 +236,16 @@ function Library() {
                     <svg width="2" height="33" viewBox="0 0 1 33" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <line x1="0.5" y1="-2.18557e-08" x2="0.500001" y2="33" stroke="#E0E5EB"/>
                     </svg>
-                    {!isPhone ? (<></>) : (
-                        <div style={{width: 33,height: 33,borderRadius: '50%',background: '#F5F7FA', margin: '0 0 0 14px',display: 'inline-flex',alignItems: 'center',justifyContent: 'center'}}><p style={{margin:'0', fontFamily: '"Montserrat", serif', fontWeight: 600, color: '#242A37'}}>{firstLetter}</p></div>
+                    {!isPhone ? (<></>) : (currentUser?.Icon) ? (
+                        <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                            <img src={currentUser.Icon} alt="avatar" style={{ width: 33, height: 33, borderRadius: "50%", margin: "0 0 0 12px", objectFit: "cover" }}/>
+                        </Link>
+                    ) : (
+                        <Link to={'/user'} style={{textDecoration: 'none', cursor: 'pointer'}}>
+                            <div style={{ width: 33, height: 33, borderRadius: "50%", background: "#F5F7FA", margin: "0 0 0 12px", display: "inline-flex", alignItems: "center", justifyContent: "center"}}>
+                                <p style={{ margin: 0, fontFamily: '"Montserrat", serif', fontWeight: 600, color: "#242A37"}}>{firstLetter}</p>
+                            </div>
+                        </Link>
                     )}
                     <Link to="/login">
                         <p onClick={()=>{localStorage.removeItem("currentUser"), setCurrentUser(null)}} style={{fontFamily: '"Montserrat", serif', fontWeight: 300, color: '#242A37', margin: '7px 13px 0 14px', textDecoration: 'underline'}}>Вихiд</p>

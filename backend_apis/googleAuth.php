@@ -105,7 +105,8 @@ if (!$is_access_token) {
 }
 $email = strtolower(trim($payload['email']));
 $name = $payload['name'] ?? ($payload['given_name'] ?? $email);
-$stmt = $mysqli->prepare('SELECT id, name, email, training, finishDate, readDays FROM users WHERE email = ?');
+$avatar = $payload['picture'] ?? null;
+$stmt = $mysqli->prepare('SELECT id, name, email, Icon, Google, training, finishDate, readDays FROM users WHERE email = ?');
 if (!$stmt) sendError('Помилка БД', 500);
 $stmt->bind_param('s', $email);
 if (!$stmt->execute()) sendError('Помилка БД', 500);
@@ -122,13 +123,29 @@ if ($action !== 'register') {
 }
 $generated = bin2hex(random_bytes(6));
 $hashed = password_hash($generated, PASSWORD_DEFAULT);
-$stmt = $mysqli->prepare('INSERT INTO users (name, email, password, training, finishDate, readDays) VALUES (?, ?, ?, 0, "", "")');
+$iconPath = null;
+
+if ($avatar) {
+    $avatar = str_replace("s96", "s400", $avatar);
+    $iconsDir = __DIR__ . "/icons/";
+    if (!file_exists($iconsDir)) {
+        mkdir($iconsDir, 0777, true);
+    }
+    $fileName = uniqid() . ".jpg";
+    $filePath = $iconsDir . $fileName;
+    $img = @file_get_contents($avatar);
+    if ($img) {
+        file_put_contents($filePath, $img);
+        $iconPath = "/icons/" . $fileName;
+    }
+}
+$stmt = $mysqli->prepare('INSERT INTO users (name, email, password, Icon, Google, training, finishDate, readDays) VALUES (?, ?, ?, ?, 1, 0, NULL, 0)');
 if (!$stmt) sendError('Помилка БД при вставці', 500);
-$stmt->bind_param('sss', $name, $email, $hashed);
+$stmt->bind_param('ssss', $name, $email, $hashed, $iconPath);
 if (!$stmt->execute()) sendError('Не вдалося створити користувача', 500);
 $id = $mysqli->insert_id;
 $stmt->close();
-$stmt = $mysqli->prepare('SELECT id, name, email, training, finishDate, readDays FROM users WHERE id = ?');
+$stmt = $mysqli->prepare('SELECT id, name, email, Icon, Google, training, finishDate, readDays FROM users WHERE id = ?');
 if (!$stmt) sendError('Помилка БД при отриманні користувача', 500);
 $stmt->bind_param('i', $id);
 $stmt->execute();
